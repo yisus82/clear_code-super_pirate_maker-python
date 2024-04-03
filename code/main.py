@@ -14,13 +14,13 @@ class Game:
     self.editor = Editor()
     mouse_path = path.join("..", "graphics", "cursors", "mouse.png")
     mouse_surface = pygame.image.load(mouse_path).convert_alpha()
-    mouse_cursor = pygame.cursors.Cursor((0,0), mouse_surface)
-    pygame.mouse.set_cursor(mouse_cursor)
+    self.mouse_cursor = pygame.cursors.Cursor((0, 0), mouse_surface)
 
   def run(self):
     while True:
       dt = self.clock.tick(FPS) / 1000
       self.editor.run(dt)
+      pygame.mouse.set_cursor(self.mouse_cursor)
       pygame.display.update()
 
 

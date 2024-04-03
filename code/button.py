@@ -8,7 +8,6 @@ class Button(pygame.sprite.Sprite):
     self.rect = rect
     self.image = pygame.Surface(self.rect.size) 
     self.items = items
-    print(self.items)
     self.selected_index = 0
 
   def select_item(self, index):
