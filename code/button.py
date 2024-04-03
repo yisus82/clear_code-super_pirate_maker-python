@@ -8,7 +8,14 @@ class Button(pygame.sprite.Sprite):
     self.rect = rect
     self.image = pygame.Surface(self.rect.size) 
     self.items = items
+    print(self.items)
     self.selected_index = 0
+
+  def select_item(self, index):
+    for i in range(0, len(self.items)):
+      if self.items[i][0] == index:
+        self.selected_index = i
+        break
 
   def get_menu_item_index(self):
     return self.items[self.selected_index][0]

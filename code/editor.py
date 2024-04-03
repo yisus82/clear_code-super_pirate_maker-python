@@ -60,9 +60,9 @@ class Editor:
   def selection_hotkeys(self, event):
     if event.type == pygame.KEYDOWN:
       if event.key == pygame.K_RIGHT:
-        self.selected_index = (self.selected_index + 1) % len(self.menu.items)
+        self.selected_index = (self.selected_index + 1) % len(self.menu.menu_items)
       if event.key == pygame.K_LEFT:
-        self.selected_index = (self.selected_index - 1) % len(self.menu.items)
+        self.selected_index = (self.selected_index - 1) % len(self.menu.menu_items)
 
   def menu_click(self, event):
     if event.type == pygame.MOUSEBUTTONDOWN and self.menu.rect.collidepoint(pygame.mouse.get_pos()):
@@ -92,4 +92,3 @@ class Editor:
     self.draw_tile_lines()
     pygame.draw.circle(self.display_surface, "red", self.origin, 10)
     self.menu.display(self.selected_index)
-    

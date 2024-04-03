@@ -53,8 +53,8 @@ class Menu:
     generic_button_rect = pygame.Rect(self.rect.topleft, (self.rect.width / 2, self.rect.height / 2))
     terrain_button_rect = generic_button_rect.copy().inflate(-MENU_BUTTON_MARGIN, -MENU_BUTTON_MARGIN)
     coin_button_rect = generic_button_rect.move(self.rect.height / 2, 0).inflate(-MENU_BUTTON_MARGIN, -MENU_BUTTON_MARGIN)
-    enemy_button_rect = generic_button_rect.move(self.rect.height / 2, self.rect.width / 2).inflate(-MENU_BUTTON_MARGIN, -MENU_BUTTON_MARGIN)
-    palm_button_rect = generic_button_rect.move(0, self.rect.width / 2).inflate(-MENU_BUTTON_MARGIN, -MENU_BUTTON_MARGIN)
+    enemy_button_rect = generic_button_rect.move(0, self.rect.width / 2).inflate(-MENU_BUTTON_MARGIN, -MENU_BUTTON_MARGIN)
+    palm_button_rect = generic_button_rect.move(self.rect.height / 2, self.rect.width / 2).inflate(-MENU_BUTTON_MARGIN, -MENU_BUTTON_MARGIN)
     self.menu_buttons_rects["terrain"] = terrain_button_rect
     self.menu_buttons_rects["coin"] = coin_button_rect
     self.menu_buttons_rects["enemy"] = enemy_button_rect
@@ -75,12 +75,16 @@ class Menu:
           menu_button.switch_item()
         return menu_button.get_menu_item_index()
 
-  def highlight_indicator(self, index):
+  def update_selected_item(self, index):
     menu_item = self.menu_items[index]
     menu_section = menu_item.split("_")[0].replace(" ", "_")
-    pygame.draw.rect(self.display_surface, BUTTON_LINE_COLOR, self.menu_buttons_rects[menu_section].inflate(4, 4), 5, 4)
+    pygame.draw.rect(self.display_surface, BUTTON_LINE_COLOR, self.menu_buttons_rects[menu_section].inflate(10, 10), 5, 0)
+    for menu_button in self.menu_buttons:
+      for item in menu_button.items:
+        if item[0] == index:
+          menu_button.select_item(index)
 
   def display(self, index):
+    self.update_selected_item(index)
     self.menu_buttons.update()
     self.menu_buttons.draw(self.display_surface)
-    self.highlight_indicator(index)
