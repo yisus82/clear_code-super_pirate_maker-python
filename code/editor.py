@@ -1,4 +1,5 @@
 import sys
+from os import path
 
 import pygame
 from canvas_tile import CanvasTile
@@ -13,8 +14,13 @@ class Editor:
         self.display_surface = pygame.display.get_surface()
         self.window_width = self.display_surface.get_width()
         self.window_height = self.display_surface.get_height()
+
+        # assets setup
         self.canvas_data = {}
         self.land_tiles = land_tiles
+        self.water_bottom = pygame.image.load(
+            path.join("..", "graphics", "terrain", "water", "water_bottom.png")
+        )
 
         # navigation setup
         self.origin = pygame.Vector2(0, 0)
@@ -100,13 +106,21 @@ class Editor:
         for cell in local_cluster:
             if cell in self.canvas_data:
                 self.canvas_data[cell].land_neighbors = []
+                self.canvas_data[cell].water_bottom = False
                 for name, offset in NEIGHBOR_DIRECTIONS.items():
                     neighbor_cell = (cell[0] + offset[0], cell[1] + offset[1])
-                    if (
-                        neighbor_cell in self.canvas_data
-                        and self.canvas_data[neighbor_cell].has_land
-                    ):
-                        self.canvas_data[cell].land_neighbors.append(name)
+                    if neighbor_cell in self.canvas_data:
+                        # water neighbors
+                        if (
+                            name == "A"
+                            and self.canvas_data[cell].has_water
+                            and self.canvas_data[neighbor_cell].has_water
+                        ):
+                            self.canvas_data[cell].water_bottom = True
+
+                        # land neighbors
+                        if self.canvas_data[neighbor_cell].has_land:
+                            self.canvas_data[cell].land_neighbors.append(name)
 
     def get_cell(self, pos):
         return (pos[0] - int(self.origin.x)) // TILE_SIZE, (
@@ -176,11 +190,14 @@ class Editor:
 
             # water
             if tile.has_water:
-                pygame.draw.rect(
-                    self.display_surface,
-                    "blue",
-                    pygame.Rect(pos, (TILE_SIZE, TILE_SIZE)),
-                )
+                if tile.water_bottom:
+                    self.display_surface.blit(self.water_bottom, pos)
+                else:
+                    pygame.draw.rect(
+                        self.display_surface,
+                        "blue",
+                        pygame.Rect(pos, (TILE_SIZE, TILE_SIZE)),
+                    )
 
             # land
             if tile.has_land:

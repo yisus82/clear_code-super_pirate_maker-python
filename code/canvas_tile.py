@@ -6,7 +6,7 @@ class CanvasTile:
 
         # water
         self.has_water = False
-        self.water_on_top = False
+        self.water_bottom = False
 
         # coin
         self.coin = None
