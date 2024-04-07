@@ -75,7 +75,7 @@ class Editor:
     return (pos[0] - int(self.origin.x)) // TILE_SIZE, (pos[1] - int(self.origin.y)) // TILE_SIZE
 
   def canvas_click(self, event):
-    if event.type == pygame.MOUSEBUTTONDOWN:
+    if event.type == pygame.MOUSEBUTTONDOWN or (pygame.key.get_pressed()[pygame.K_LSHIFT] and pygame.mouse.get_pressed()[0]):
       mouse_pos = pygame.mouse.get_pos()
       if not self.menu.rect.collidepoint(mouse_pos):
         current_cell = self.get_cell(mouse_pos)
@@ -88,7 +88,6 @@ class Editor:
               self.canvas_data[current_cell] = CanvasTile(item_type, self.selected_index)
             else:
               self.canvas_data[current_cell].add_item(item_type, self.selected_index)
-            print(self.canvas_data[current_cell])
         # right click
         elif pygame.mouse.get_pressed()[2]:
           if current_cell in self.canvas_data:
@@ -108,6 +107,34 @@ class Editor:
       pygame.draw.line(self.support_line_surface, LINE_COLOR, (0, y), (self.display_surface.get_width(), y))
     self.display_surface.blit(self.support_line_surface, (0, 0))
 
+  def get_position(self, cell):
+    return cell[0] * TILE_SIZE + self.origin.x, cell[1] * TILE_SIZE + self.origin.y
+  
+  def draw_level(self):
+    for cell, tile in self.canvas_data.items():
+      pos = self.get_position(cell)
+
+      # water
+      if tile.has_water:
+        pygame.draw.rect(self.display_surface, "blue", pygame.Rect(pos, (TILE_SIZE, TILE_SIZE)))
+
+      # land
+      if tile.has_land:
+        pygame.draw.rect(self.display_surface, "brown", pygame.Rect(pos, (TILE_SIZE, TILE_SIZE)))
+
+      # coin
+      if tile.coin is not None:
+        pygame.draw.rect(self.display_surface, "yellow", pygame.Rect(pos, (TILE_SIZE, TILE_SIZE)))
+
+      # enemy
+      if tile.enemy is not None:
+        pygame.draw.rect(self.display_surface, "red", pygame.Rect(pos, (TILE_SIZE, TILE_SIZE)))
+
+      # objects
+      for obj in tile.objects:
+        pygame.draw.rect(self.display_surface, "black", pygame.Rect(pos, (TILE_SIZE, TILE_SIZE)))
+        
+
   def update_timers(self):
     self.pan_timer.update()
 
@@ -115,6 +142,7 @@ class Editor:
     self.event_loop()
     self.update_timers()
     self.display_surface.fill("white")
+    self.draw_level()
     self.draw_tile_lines()
     pygame.draw.circle(self.display_surface, "red", self.origin, 10)
     self.menu.display(self.selected_index)
