@@ -3,17 +3,18 @@ import sys
 import pygame
 from canvas_tile import CanvasTile
 from menu import Menu
-from settings import LINE_COLOR, TILE_SIZE
+from settings import LINE_COLOR, NEIGHBOR_DIRECTIONS, TILE_SIZE
 from timer import Timer
 
 
 class Editor:
-  def __init__(self):
+  def __init__(self, land_tiles):
     # display setup
     self.display_surface = pygame.display.get_surface()
     self.window_width = self.display_surface.get_width()
     self.window_height = self.display_surface.get_height()
     self.canvas_data = {}
+    self.land_tiles = land_tiles
 
     # navigation setup
     self.origin = pygame.Vector2(0, 0)
@@ -23,7 +24,7 @@ class Editor:
 
     # support line setup
     self.support_line_surface = pygame.Surface((self.window_width, self.window_height), pygame.SRCALPHA)
-    self.support_line_surface.set_colorkey("green")
+    self.support_line_surface.set_colorkey('green')
     self.support_line_surface.set_alpha(30)
 
     # menu setup
@@ -71,6 +72,24 @@ class Editor:
     if event.type == pygame.MOUSEBUTTONDOWN and self.menu.rect.collidepoint(pygame.mouse.get_pos()):
       self.selected_index = self.menu.click(pygame.mouse.get_pos(), pygame.mouse.get_pressed())
 
+  def check_neighbors(self, cell_pos):
+    # create a local cluster
+    cluster_size = 3
+    local_cluster = [
+      (cell_pos[0] + col - int(cluster_size / 2), cell_pos[1] + row - int(cluster_size / 2)) 
+      for col in range(cluster_size) 
+      for row in range(cluster_size)
+    ]
+
+    # check neighbors
+    for cell in local_cluster:
+      if cell in self.canvas_data:
+        self.canvas_data[cell].land_neighbors = []
+        for name, offset in NEIGHBOR_DIRECTIONS.items():
+          neighbor_cell = (cell[0] + offset[0], cell[1] + offset[1])
+          if neighbor_cell in self.canvas_data and self.canvas_data[neighbor_cell].has_land:
+              self.canvas_data[cell].land_neighbors.append(name)
+
   def get_cell(self, pos):
     return (pos[0] - int(self.origin.x)) // TILE_SIZE, (pos[1] - int(self.origin.y)) // TILE_SIZE
 
@@ -92,6 +111,7 @@ class Editor:
         elif pygame.mouse.get_pressed()[2]:
           if current_cell in self.canvas_data:
             del self.canvas_data[current_cell]
+        self.check_neighbors(current_cell)
 
   def draw_tile_lines(self):
     cols = self.display_surface.get_width() // TILE_SIZE
@@ -120,7 +140,9 @@ class Editor:
 
       # land
       if tile.has_land:
-        pygame.draw.rect(self.display_surface, "brown", pygame.Rect(pos, (TILE_SIZE, TILE_SIZE)))
+        land_type = "".join(tile.land_neighbors)
+        surface = self.land_tiles[land_type] if land_type in self.land_tiles else self.land_tiles["X"]
+        self.display_surface.blit(surface, pos)
 
       # coin
       if tile.coin is not None:

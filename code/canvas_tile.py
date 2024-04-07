@@ -21,13 +21,13 @@ class CanvasTile:
 
   def add_item(self, item_type, item_id):
     match item_type:
-      case 'land': 
+      case "land": 
         self.has_land = True
-      case 'water': 
+      case "water": 
         self.has_water = True
-      case 'coin': 
+      case "coin": 
         self.coin = item_id
-      case 'enemy': 
+      case "enemy": 
         self.enemy = item_id
 
   def __str__(self):
