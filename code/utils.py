@@ -6,9 +6,9 @@ import pygame
 def import_folder(folder):
     pathname = path.normpath(folder)
     image_surfaces = []
-    for _, _, filenames in walk(pathname):
+    for dirpath, _, filenames in walk(pathname):
         for filename in sorted(filenames):
-            full_path = path.join(pathname, filename)
+            full_path = path.join(dirpath, filename)
             try:
                 image_surface = pygame.image.load(full_path).convert_alpha()
                 image_surfaces.append(image_surface)
@@ -20,9 +20,9 @@ def import_folder(folder):
 def import_folder_as_dict(folder):
     pathname = path.normpath(folder)
     image_surfaces = {}
-    for _, __, img_files in walk(pathname):
+    for dirpath, __, img_files in walk(pathname):
         for image in img_files:
-            full_path = path.join(pathname, image)
+            full_path = path.join(dirpath, image)
             image_surface = pygame.image.load(full_path).convert_alpha()
             image_surfaces[image.split(".")[0]] = image_surface
 

@@ -4,8 +4,9 @@ from os import path
 import pygame
 from canvas_tile import CanvasTile
 from menu import Menu
-from settings import LINE_COLOR, NEIGHBOR_DIRECTIONS, TILE_SIZE
+from settings import ANIMATION_SPEED, LINE_COLOR, NEIGHBOR_DIRECTIONS, TILE_SIZE
 from timer import Timer
+from utils import import_folder
 
 
 class Editor:
@@ -15,12 +16,19 @@ class Editor:
         self.window_width = self.display_surface.get_width()
         self.window_height = self.display_surface.get_height()
 
+        # menu setup
+        self.menu = Menu()
+        self.selected_index = 0
+
         # assets setup
         self.canvas_data = {}
         self.land_tiles = land_tiles
         self.water_bottom = pygame.image.load(
             path.join("..", "graphics", "terrain", "water", "water_bottom.png")
         )
+        self.animations = {}
+        self.import_animations()
+        self.frame_index = 0
 
         # navigation setup
         self.origin = pygame.Vector2(0, 0)
@@ -35,9 +43,14 @@ class Editor:
         self.support_line_surface.set_colorkey("green")
         self.support_line_surface.set_alpha(30)
 
-        # menu setup
-        self.menu = Menu()
-        self.selected_index = 0
+    def import_animations(self):
+        for index, item in enumerate(self.menu.menu_items):
+            menu_section = item.split("_")[0].replace(" ", "_")
+            menu_item = item.split("_")[1].replace(" ", "_")
+            menu_item_folder = path.join(
+                "..", "graphics", menu_section, menu_item, "idle"
+            )
+            self.animations[index] = import_folder(menu_item_folder)
 
     def event_loop(self):
         for event in pygame.event.get():
@@ -193,11 +206,10 @@ class Editor:
                 if tile.water_bottom:
                     self.display_surface.blit(self.water_bottom, pos)
                 else:
-                    pygame.draw.rect(
-                        self.display_surface,
-                        "blue",
-                        pygame.Rect(pos, (TILE_SIZE, TILE_SIZE)),
-                    )
+                    frames = self.animations[1]
+                    frame = int(self.frame_index % len(frames))
+                    surface = frames[frame]
+                    self.display_surface.blit(surface, pos)
 
             # land
             if tile.has_land:
@@ -211,19 +223,23 @@ class Editor:
 
             # coin
             if tile.coin is not None:
-                pygame.draw.rect(
-                    self.display_surface,
-                    "yellow",
-                    pygame.Rect(pos, (TILE_SIZE, TILE_SIZE)),
+                frames = self.animations[tile.coin]
+                frame = int(self.frame_index % len(frames))
+                surface = frames[frame]
+                rect = surface.get_rect(
+                    center=(pos[0] + TILE_SIZE // 2, pos[1] + TILE_SIZE // 2)
                 )
+                self.display_surface.blit(surface, rect)
 
             # enemy
             if tile.enemy is not None:
-                pygame.draw.rect(
-                    self.display_surface,
-                    "red",
-                    pygame.Rect(pos, (TILE_SIZE, TILE_SIZE)),
+                frames = self.animations[tile.enemy]
+                frame = int(self.frame_index % len(frames))
+                surface = frames[frame]
+                rect = surface.get_rect(
+                    midbottom=(pos[0] + TILE_SIZE // 2, pos[1] + TILE_SIZE)
                 )
+                self.display_surface.blit(surface, rect)
 
             # objects
             for obj in tile.objects:
@@ -238,8 +254,9 @@ class Editor:
 
     def run(self, dt):
         self.event_loop()
+        self.frame_index += ANIMATION_SPEED * dt
         self.update_timers()
-        self.display_surface.fill("white")
+        self.display_surface.fill("gray")
         self.draw_level()
         self.draw_tile_lines()
         pygame.draw.circle(self.display_surface, "red", self.origin, 10)

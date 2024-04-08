@@ -1,6 +1,7 @@
 # general setup
 FPS = 60
 TILE_SIZE = 64
+ANIMATION_SPEED = 8
 
 # colors
 LINE_COLOR = "black"
