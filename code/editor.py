@@ -47,8 +47,9 @@ class Editor:
         # objects
         self.canvas_objects = pygame.sprite.Group()
         self.object_drag_active = False
+        self.object_timer = Timer(400)
 
-        # Player
+        # player
         player_path = path.join("..", "graphics", "player", "idle_right")
         self.player_animations = import_folder(player_path)
         PlayerObject(
@@ -208,13 +209,15 @@ class Editor:
                                 item_type, self.selected_index
                             )
                     else:
-                        CanvasObject(
-                            mouse_pos,
-                            self.animations[self.selected_index],
-                            self.selected_index,
-                            self.origin,
-                            [self.canvas_objects],
-                        )
+                        if not self.object_timer.active:
+                            CanvasObject(
+                                mouse_pos,
+                                self.animations[self.selected_index],
+                                self.selected_index,
+                                self.origin,
+                                [self.canvas_objects],
+                            )
+                            self.object_timer.activate()
                 # right click
                 elif pygame.mouse.get_pressed()[2]:
                     if current_cell in self.canvas_data:
@@ -300,6 +303,7 @@ class Editor:
 
     def update_timers(self):
         self.pan_timer.update()
+        self.object_timer.update()
 
     def run(self, dt):
         self.event_loop()
