@@ -58,11 +58,11 @@ class Menu:
             )
             if menu_section in self.menu_surfaces:
                 self.menu_surfaces[menu_section].append(
-                    (index, pygame.image.load(menu_surface_path))
+                    (index, pygame.image.load(menu_surface_path).convert_alpha())
                 )
             else:
                 self.menu_surfaces[menu_section] = [
-                    (index, pygame.image.load(menu_surface_path))
+                    (index, pygame.image.load(menu_surface_path).convert_alpha())
                 ]
 
     def create_buttons(self):

@@ -2,6 +2,7 @@ import sys
 from os import path
 
 import pygame
+from canvas_object import CanvasObject, PlayerObject, SkyHandle
 from canvas_tile import CanvasTile
 from menu import Menu
 from settings import ANIMATION_SPEED, LINE_COLOR, NEIGHBOR_DIRECTIONS, TILE_SIZE
@@ -25,7 +26,7 @@ class Editor:
         self.land_tiles = land_tiles
         self.water_bottom = pygame.image.load(
             path.join("..", "graphics", "terrain", "water", "water_bottom.png")
-        )
+        ).convert_alpha()
         self.animations = {}
         self.import_animations()
         self.frame_index = 0
@@ -42,6 +43,30 @@ class Editor:
         )
         self.support_line_surface.set_colorkey("green")
         self.support_line_surface.set_alpha(30)
+
+        # objects
+        self.canvas_objects = pygame.sprite.Group()
+        self.object_drag_active = False
+
+        # Player
+        player_path = path.join("..", "graphics", "player", "idle_right")
+        self.player_animations = import_folder(player_path)
+        PlayerObject(
+            (200, self.window_height / 2),
+            self.player_animations,
+            self.origin,
+            [self.canvas_objects],
+        )
+
+        # sky
+        sky_handle_path = path.join("..", "graphics", "cursors", "handle.png")
+        self.sky_handle_surf = pygame.image.load(sky_handle_path).convert_alpha()
+        self.sky_handle = SkyHandle(
+            (self.window_width / 2, self.window_height / 2),
+            [self.sky_handle_surf],
+            self.origin,
+            [self.canvas_objects],
+        )
 
     def import_animations(self):
         for index, item in enumerate(self.menu.menu_items):
@@ -62,6 +87,7 @@ class Editor:
             self.pan_input(event)
             self.selection_hotkeys(event)
             self.menu_click(event)
+            self.object_drag(event)
             self.canvas_click(event)
 
     def toggle_pan(self):
@@ -103,6 +129,21 @@ class Editor:
                 pygame.mouse.get_pos(), pygame.mouse.get_pressed()
             )
 
+    def object_drag(self, event):
+        # start dragging
+        if event.type == pygame.MOUSEBUTTONDOWN and pygame.mouse.get_pressed()[0]:
+            for sprite in self.canvas_objects:
+                if sprite.rect.collidepoint(event.pos):
+                    sprite.start_drag()
+                    self.object_drag_active = True
+
+        # stop dragging
+        if event.type == pygame.MOUSEBUTTONUP and self.object_drag_active:
+            for sprite in self.canvas_objects:
+                if sprite.selected:
+                    sprite.drag_end(self.origin)
+                    self.object_drag_active = False
+
     def check_neighbors(self, cell_pos):
         # create a local cluster
         cluster_size = 3
@@ -141,6 +182,9 @@ class Editor:
         ) // TILE_SIZE
 
     def canvas_click(self, event):
+        if self.object_drag_active:
+            return
+
         if event.type == pygame.MOUSEBUTTONDOWN or (
             pygame.key.get_pressed()[pygame.K_LSHIFT] and pygame.mouse.get_pressed()[0]
         ):
@@ -150,17 +194,26 @@ class Editor:
                 # left click
                 if pygame.mouse.get_pressed()[0]:
                     item_type = self.menu.menu_items[self.selected_index].split("_")[0]
-                    if item_type == "terrain":
-                        item_type = self.menu.menu_items[self.selected_index].split(
-                            "_"
-                        )[1]
-                    if current_cell not in self.canvas_data:
-                        self.canvas_data[current_cell] = CanvasTile(
-                            item_type, self.selected_index
-                        )
+                    if item_type in ("terrain", "coin", "enemy"):
+                        if item_type == "terrain":
+                            item_type = self.menu.menu_items[self.selected_index].split(
+                                "_"
+                            )[1]
+                        if current_cell not in self.canvas_data:
+                            self.canvas_data[current_cell] = CanvasTile(
+                                item_type, self.selected_index
+                            )
+                        else:
+                            self.canvas_data[current_cell].add_item(
+                                item_type, self.selected_index
+                            )
                     else:
-                        self.canvas_data[current_cell].add_item(
-                            item_type, self.selected_index
+                        CanvasObject(
+                            mouse_pos,
+                            self.animations[self.selected_index],
+                            self.selected_index,
+                            self.origin,
+                            [self.canvas_objects],
                         )
                 # right click
                 elif pygame.mouse.get_pressed()[2]:
@@ -198,6 +251,10 @@ class Editor:
         return cell[0] * TILE_SIZE + self.origin.x, cell[1] * TILE_SIZE + self.origin.y
 
     def draw_level(self):
+        # objects
+        self.canvas_objects.draw(self.display_surface)
+
+        # tiles
         for cell, tile in self.canvas_data.items():
             pos = self.get_position(cell)
 
@@ -241,20 +298,13 @@ class Editor:
                 )
                 self.display_surface.blit(surface, rect)
 
-            # objects
-            for obj in tile.objects:
-                pygame.draw.rect(
-                    self.display_surface,
-                    "black",
-                    pygame.Rect(pos, (TILE_SIZE, TILE_SIZE)),
-                )
-
     def update_timers(self):
         self.pan_timer.update()
 
     def run(self, dt):
         self.event_loop()
         self.frame_index += ANIMATION_SPEED * dt
+        self.canvas_objects.update(dt)
         self.update_timers()
         self.display_surface.fill("gray")
         self.draw_level()
