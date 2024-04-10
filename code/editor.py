@@ -5,7 +5,16 @@ import pygame
 from canvas_object import CanvasObject, PlayerObject, SkyHandle
 from canvas_tile import CanvasTile
 from menu import Menu
-from settings import ANIMATION_SPEED, LINE_COLOR, NEIGHBOR_DIRECTIONS, TILE_SIZE
+from settings import (
+    ANIMATION_SPEED,
+    HOVER_COLOR,
+    HOVER_INFLATE_OFFSET,
+    HOVER_SIZE,
+    HOVER_WIDTH,
+    LINE_COLOR,
+    NEIGHBOR_DIRECTIONS,
+    TILE_SIZE,
+)
 from timer import Timer
 from utils import import_folder
 
@@ -315,6 +324,56 @@ class Editor:
                 )
                 self.display_surface.blit(surface, rect)
 
+    def hover(self):
+        mouse_pos = pygame.mouse.get_pos()
+        for sprite in self.canvas_objects:
+            if sprite.rect.collidepoint(mouse_pos):
+                rect = sprite.rect.inflate(HOVER_INFLATE_OFFSET)
+                pygame.draw.lines(
+                    self.display_surface,
+                    HOVER_COLOR,
+                    False,
+                    (
+                        (rect.left, rect.top + HOVER_SIZE),
+                        rect.topleft,
+                        (rect.left + HOVER_SIZE, rect.top),
+                    ),
+                    HOVER_WIDTH,
+                )
+                pygame.draw.lines(
+                    self.display_surface,
+                    HOVER_COLOR,
+                    False,
+                    (
+                        (rect.right - HOVER_SIZE, rect.top),
+                        rect.topright,
+                        (rect.right, rect.top + HOVER_SIZE),
+                    ),
+                    HOVER_WIDTH,
+                )
+                pygame.draw.lines(
+                    self.display_surface,
+                    HOVER_COLOR,
+                    False,
+                    (
+                        (rect.right - HOVER_SIZE, rect.bottom),
+                        rect.bottomright,
+                        (rect.right, rect.bottom - HOVER_SIZE),
+                    ),
+                    HOVER_WIDTH,
+                )
+                pygame.draw.lines(
+                    self.display_surface,
+                    HOVER_COLOR,
+                    False,
+                    (
+                        (rect.left, rect.bottom - HOVER_SIZE),
+                        rect.bottomleft,
+                        (rect.left + HOVER_SIZE, rect.bottom),
+                    ),
+                    HOVER_WIDTH,
+                )
+
     def update_timers(self):
         self.pan_timer.update()
         self.object_timer.update()
@@ -328,4 +387,5 @@ class Editor:
         self.draw_level()
         self.draw_tile_lines()
         pygame.draw.circle(self.display_surface, "red", self.origin, 10)
+        self.hover()
         self.menu.display(self.selected_index)
