@@ -39,6 +39,8 @@ class Editor:
         self.animations = {}
         self.import_animations()
         self.frame_index = 0
+        self.preview_surfaces = {}
+        self.import_preview_surfaces()
 
         # navigation setup
         self.origin = pygame.Vector2(0, 0)
@@ -86,6 +88,16 @@ class Editor:
                 "..", "graphics", menu_section, menu_item, "idle"
             )
             self.animations[index] = import_folder(menu_item_folder)
+
+    def import_preview_surfaces(self):
+        for index, item in enumerate(self.menu.menu_items):
+            menu_section = item.split("_")[0].replace(" ", "_")
+            menu_item = item.split("_")[1].replace(" ", "_")
+            menu_item_path = path.join(
+                "..", "graphics", "preview", menu_section, f"{menu_item}.png"
+            )
+            menu_item_surface = pygame.image.load(menu_item_path).convert_alpha()
+            self.preview_surfaces[index] = (menu_section, menu_item_surface)
 
     def event_loop(self):
         for event in pygame.event.get():
@@ -374,6 +386,25 @@ class Editor:
                     HOVER_WIDTH,
                 )
 
+    def preview(self):
+        mouse_pos = pygame.mouse.get_pos()
+        if not self.menu.rect.collidepoint(mouse_pos):
+            menu_section, menu_item_surface = self.preview_surfaces[self.selected_index]
+            surface = menu_item_surface.copy()
+            surface.set_alpha(100)
+
+            # tile
+            if menu_section in ("terrain", "coin", "enemy"):
+                current_cell = self.get_cell(mouse_pos)
+                rect = surface.get_rect(
+                    topleft=self.origin + pygame.Vector2(current_cell) * TILE_SIZE
+                )
+            # object
+            else:
+                rect = surface.get_rect(center=mouse_pos)
+
+            self.display_surface.blit(surface, rect)
+
     def update_timers(self):
         self.pan_timer.update()
         self.object_timer.update()
@@ -387,5 +418,6 @@ class Editor:
         self.draw_level()
         self.draw_tile_lines()
         pygame.draw.circle(self.display_surface, "red", self.origin, 10)
+        self.preview()
         self.hover()
         self.menu.display(self.selected_index)
