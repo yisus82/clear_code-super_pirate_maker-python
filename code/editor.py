@@ -192,9 +192,10 @@ class Editor:
             mouse_pos = pygame.mouse.get_pos()
             if not self.menu.rect.collidepoint(mouse_pos):
                 current_cell = self.get_cell(mouse_pos)
-                # left click
+                # left click (add items)
                 if pygame.mouse.get_pressed()[0]:
                     item_type = self.menu.menu_items[self.selected_index].split("_")[0]
+                    # tiles
                     if item_type in ("terrain", "coin", "enemy"):
                         if item_type == "terrain":
                             item_type = self.menu.menu_items[self.selected_index].split(
@@ -208,6 +209,8 @@ class Editor:
                             self.canvas_data[current_cell].add_item(
                                 item_type, self.selected_index
                             )
+                        self.check_neighbors(current_cell)
+                    # objects
                     else:
                         if not self.object_timer.active:
                             CanvasObject(
@@ -218,11 +221,22 @@ class Editor:
                                 [self.canvas_objects],
                             )
                             self.object_timer.activate()
-                # right click
+                # right click (delete items)
                 elif pygame.mouse.get_pressed()[2]:
+                    # tiles
                     if current_cell in self.canvas_data:
                         del self.canvas_data[current_cell]
-                self.check_neighbors(current_cell)
+                        self.check_neighbors(current_cell)
+
+                    # objects
+                    for sprite in self.canvas_objects:
+                        # player and sky handle are not deletable
+                        if isinstance(sprite, PlayerObject) or isinstance(
+                            sprite, SkyHandle
+                        ):
+                            continue
+                        if sprite.rect.collidepoint(mouse_pos):
+                            sprite.kill()
 
     def draw_tile_lines(self):
         cols = self.display_surface.get_width() // TILE_SIZE
