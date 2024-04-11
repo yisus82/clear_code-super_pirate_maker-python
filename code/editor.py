@@ -1,5 +1,6 @@
 import sys
 from os import path
+from random import choice, randint
 
 import pygame
 from canvas_object import CanvasObject, PlayerObject, SkyHandle
@@ -7,12 +8,18 @@ from canvas_tile import CanvasTile
 from menu import Menu
 from settings import (
     ANIMATION_SPEED,
+    HORIZON_COLOR,
     HOVER_COLOR,
     HOVER_INFLATE_OFFSET,
     HOVER_SIZE,
     HOVER_WIDTH,
+    INITIAL_CLOUDS_CENTER,
+    INITIAL_CLOUDS_LEFT,
+    INITIAL_CLOUDS_RIGHT,
     LINE_COLOR,
     NEIGHBOR_DIRECTIONS,
+    SEA_COLOR,
+    SKY_COLOR,
     TILE_SIZE,
 )
 from timer import Timer
@@ -41,6 +48,14 @@ class Editor:
         self.frame_index = 0
         self.preview_surfaces = {}
         self.import_preview_surfaces()
+
+        # clouds setup
+        self.current_clouds = []
+        clouds_path = path.join("..", "graphics", "clouds", "small")
+        self.cloud_surfaces = import_folder(clouds_path)
+        self.cloud_timer = pygame.event.custom_type()
+        pygame.time.set_timer(self.cloud_timer, 2000)
+        self.create_initial_clouds()
 
         # navigation setup
         self.origin = pygame.Vector2(0, 0)
@@ -106,6 +121,12 @@ class Editor:
             ):
                 pygame.quit()
                 sys.exit()
+
+            # reset the origin
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_o:
+                self.origin = pygame.Vector2(0, 0)
+
+            self.create_clouds(event)
             self.pan_input(event)
             self.selection_hotkeys(event)
             self.menu_click(event)
@@ -124,6 +145,8 @@ class Editor:
                 self.origin.x -= event.y * 50
             else:
                 self.origin.y -= event.y * 50
+            for sprite in self.canvas_objects:
+                sprite.update_position(self.origin)
 
         # panning
         if pygame.key.get_pressed()[pygame.K_p] and not self.pan_timer.active:
@@ -131,6 +154,8 @@ class Editor:
             self.pan_timer.activate()
         if self.pan_active:
             self.origin = pygame.Vector2(pygame.mouse.get_pos()) - self.pan_offset
+            for sprite in self.canvas_objects:
+                sprite.update_position(self.origin)
 
     def selection_hotkeys(self, event):
         if event.type == pygame.KEYDOWN:
@@ -405,6 +430,81 @@ class Editor:
 
             self.display_surface.blit(surface, rect)
 
+    def draw_background(self):
+        horizon_y = self.sky_handle.rect.centery
+        if horizon_y > 0:
+            # sky and clouds
+            self.display_surface.fill(SKY_COLOR)
+            self.draw_clouds(horizon_y)
+
+            if horizon_y < self.window_height:
+                # sea and horizon line
+                sea_rect = pygame.Rect(
+                    0, horizon_y, self.window_width, self.window_height
+                )
+                pygame.draw.rect(self.display_surface, SEA_COLOR, sea_rect)
+                pygame.draw.line(
+                    self.display_surface,
+                    HORIZON_COLOR,
+                    (0, horizon_y),
+                    (self.window_width, horizon_y),
+                    3,
+                )
+        else:
+            # only sea
+            self.display_surface.fill(SEA_COLOR)
+
+    def draw_clouds(self, horizon_y):
+        for cloud in self.current_clouds:
+            x = cloud["position"][0] + self.origin.x
+            y = horizon_y - cloud["position"][1]
+            self.display_surface.blit(cloud["surface"], (x, y))
+
+    def create_cloud(self, position="right"):
+        surface = choice(self.cloud_surfaces)
+        if randint(0, 4) < 2:
+            surface = pygame.transform.scale2x(surface)
+        if position == "center":
+            x_position = randint(0, self.window_width)
+        elif position == "right":
+            x_position = randint(self.window_width, self.window_width * 2)
+        else:
+            x_position = randint(-self.window_width, 0)
+        position = [x_position, randint(0, self.window_height)]
+        return {"surface": surface, "position": position, "speed": randint(20, 50)}
+
+    def create_clouds(self, event):
+        if event.type == self.cloud_timer:
+            self.current_clouds.append(self.create_cloud())
+
+    def create_initial_clouds(self):
+        for _ in range(INITIAL_CLOUDS_LEFT):
+            self.current_clouds.append(self.create_cloud("left"))
+        for _ in range(INITIAL_CLOUDS_CENTER):
+            self.current_clouds.append(self.create_cloud("center"))
+        for _ in range(INITIAL_CLOUDS_RIGHT):
+            self.current_clouds.append(self.create_cloud("right"))
+
+    def update_clouds(self, dt):
+        # move clouds
+        for cloud in self.current_clouds:
+            cloud["position"][0] -= cloud["speed"] * dt
+
+        # remove clouds that are out of the screen
+        self.current_clouds = [
+            cloud
+            for cloud in self.current_clouds
+            if cloud["position"][0] > -self.window_width
+        ]
+
+    def draw_world_limits(self):
+        x_min = -self.window_width + self.origin.x
+        x_max = 2 * self.window_width + self.origin.x
+        y_min = -self.window_height + self.origin.y
+        y_max = 2 * self.window_height + self.origin.y
+        rect = pygame.Rect(x_min, y_min, x_max - x_min, y_max - y_min)
+        pygame.draw.rect(self.display_surface, "red", rect, 3)
+
     def update_timers(self):
         self.pan_timer.update()
         self.object_timer.update()
@@ -413,11 +513,14 @@ class Editor:
         self.event_loop()
         self.frame_index += ANIMATION_SPEED * dt
         self.canvas_objects.update(dt)
+        self.update_clouds(dt)
         self.update_timers()
         self.display_surface.fill("gray")
+        self.draw_background()
         self.draw_level()
         self.draw_tile_lines()
         pygame.draw.circle(self.display_surface, "red", self.origin, 10)
+        self.draw_world_limits()
         self.preview()
         self.hover()
         self.menu.display(self.selected_index)

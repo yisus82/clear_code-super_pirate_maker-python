@@ -40,7 +40,7 @@ class CanvasObject(pygame.sprite.Sprite):
         self.image = self.frames[frame]
         self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
 
-    def pan_pos(self, origin):
+    def update_position(self, origin):
         self.rect.topleft = origin + self.distance_to_origin
 
     def update(self, dt):
