@@ -3,8 +3,9 @@ from settings import ANIMATION_SPEED
 
 
 class CanvasObject(pygame.sprite.Sprite):
-    def __init__(self, pos, frames, item_id, origin, groups):
+    def __init__(self, pos, frames, origin, groups, item_type="object", item_id=None):
         super().__init__(groups)
+        self.item_type = item_type
         self.item_id = item_id
 
         # animation
@@ -50,9 +51,9 @@ class CanvasObject(pygame.sprite.Sprite):
 
 class PlayerObject(CanvasObject):
     def __init__(self, pos, frames, origin, groups):
-        super().__init__(pos, frames, None, origin, groups)
+        super().__init__(pos, frames, origin, groups, "player")
 
 
 class SkyHandle(CanvasObject):
     def __init__(self, pos, frames, origin, groups):
-        super().__init__(pos, frames, None, origin, groups)
+        super().__init__(pos, frames, origin, groups, "sky_handle")

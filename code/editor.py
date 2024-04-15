@@ -39,7 +39,7 @@ class Editor:
 
         # assets setup
         self.canvas_data = {}
-        self.land_tiles = land_tiles
+        self.land_tile_types = land_tiles
         self.water_bottom = pygame.image.load(
             path.join("..", "graphics", "terrain", "water", "water_bottom.png")
         ).convert_alpha()
@@ -114,6 +114,79 @@ class Editor:
             menu_item_surface = pygame.image.load(menu_item_path).convert_alpha()
             self.preview_surfaces[index] = (menu_section, menu_item_surface)
 
+    def create_grid(self):
+        # clear the objects from the tiles
+        for tile in self.canvas_data.values():
+            tile.objects = []
+
+        # add objects to the tiles
+        for obj in self.canvas_objects:
+            cell = self.get_cell(obj.distance_to_origin)
+            offset = pygame.Vector2(obj.distance_to_origin) - (
+                pygame.Vector2(cell) * TILE_SIZE
+            )
+            if cell in self.canvas_data:
+                self.canvas_data[cell].add_item(obj.item_type, obj.item_id, offset)
+            else:
+                self.canvas_data[cell] = CanvasTile(obj.item_type, obj.item_id, offset)
+
+        # create an empty grid
+        layers = {
+            "player": {},
+            "water": {},
+            "land": {},
+            "coin": {},
+            "enemy": {},
+            "foreground": {},
+            "background": {},
+        }
+
+        # grid offset
+        left = sorted(self.canvas_data.keys(), key=lambda tile: tile[0])[0][0]
+        top = sorted(self.canvas_data.keys(), key=lambda tile: tile[1])[0][1]
+
+        # fill the grid
+        for tile_pos, tile in self.canvas_data.items():
+            row_adjusted = tile_pos[1] - top
+            col_adjusted = tile_pos[0] - left
+            x = col_adjusted * TILE_SIZE
+            y = row_adjusted * TILE_SIZE
+
+            if tile.has_water:
+                layers["water"][(x, y)] = tile.get_water_position()
+
+            if tile.has_land:
+                layers["land"][(x, y)] = (
+                    tile.get_land_tile_type()
+                    if tile.get_land_tile_type() in self.land_tile_types
+                    else "X"
+                )
+
+            if tile.coin:
+                layers["coin"][(x + TILE_SIZE // 2, y + TILE_SIZE // 2)] = tile.coin
+
+            if tile.enemy:
+                layers["enemy"][x, y] = tile.enemy
+
+            if tile.objects:
+                for item_type, item_id, offset in tile.objects:
+                    if item_type == "palm_bg":
+                        layers["background"][(int(x + offset.x), int(y + offset.y))] = (
+                            item_id
+                        )
+                    elif item_type == "player":
+                        layers["player"][(int(x + offset.x), int(y + offset.y))] = (
+                            "idle_right"
+                        )
+                    elif item_type == "sky_handle":
+                        pass
+                    else:
+                        layers["foreground"][(int(x + offset.x), int(y + offset.y))] = (
+                            item_id
+                        )
+
+        return layers
+
     def event_loop(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (
@@ -125,6 +198,10 @@ class Editor:
             # reset the origin
             if event.type == pygame.KEYDOWN and event.key == pygame.K_o:
                 self.origin = pygame.Vector2(0, 0)
+
+            # print the grid
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                print(self.create_grid())
 
             self.create_clouds(event)
             self.pan_input(event)
@@ -237,42 +314,49 @@ class Editor:
         ):
             mouse_pos = pygame.mouse.get_pos()
             if not self.menu.rect.collidepoint(mouse_pos):
-                current_cell = self.get_cell(mouse_pos)
+                cell = self.get_cell(mouse_pos)
                 # left click (add items)
                 if pygame.mouse.get_pressed()[0]:
-                    item_type = self.menu.menu_items[self.selected_index].split("_")[0]
+                    item_type = (
+                        self.menu.menu_items[self.selected_index]
+                        .split("_")[0]
+                        .replace(" ", "_")
+                    )
                     # tiles
                     if item_type in ("terrain", "coin", "enemy"):
                         if item_type == "terrain":
-                            item_type = self.menu.menu_items[self.selected_index].split(
-                                "_"
-                            )[1]
-                        if current_cell not in self.canvas_data:
-                            self.canvas_data[current_cell] = CanvasTile(
+                            item_type = (
+                                self.menu.menu_items[self.selected_index]
+                                .split("_")[1]
+                                .replace(" ", "_")
+                            )
+                        if cell not in self.canvas_data:
+                            self.canvas_data[cell] = CanvasTile(
                                 item_type, self.selected_index
                             )
                         else:
-                            self.canvas_data[current_cell].add_item(
+                            self.canvas_data[cell].add_item(
                                 item_type, self.selected_index
                             )
-                        self.check_neighbors(current_cell)
+                        self.check_neighbors(cell)
                     # objects
                     else:
                         if not self.object_timer.active:
                             CanvasObject(
                                 mouse_pos,
                                 self.animations[self.selected_index],
-                                self.selected_index,
                                 self.origin,
                                 [self.canvas_objects],
+                                item_type,
+                                self.selected_index,
                             )
                             self.object_timer.activate()
                 # right click (delete items)
                 elif pygame.mouse.get_pressed()[2]:
                     # tiles
-                    if current_cell in self.canvas_data:
-                        del self.canvas_data[current_cell]
-                        self.check_neighbors(current_cell)
+                    if cell in self.canvas_data:
+                        del self.canvas_data[cell]
+                        self.check_neighbors(cell)
 
                     # objects
                     for sprite in self.canvas_objects:
@@ -335,9 +419,9 @@ class Editor:
             if tile.has_land:
                 land_type = "".join(tile.land_neighbors)
                 surface = (
-                    self.land_tiles[land_type]
-                    if land_type in self.land_tiles
-                    else self.land_tiles["X"]
+                    self.land_tile_types[land_type]
+                    if land_type in self.land_tile_types
+                    else self.land_tile_types["X"]
                 )
                 self.display_surface.blit(surface, pos)
 
@@ -420,9 +504,9 @@ class Editor:
 
             # tile
             if menu_section in ("terrain", "coin", "enemy"):
-                current_cell = self.get_cell(mouse_pos)
+                cell = self.get_cell(mouse_pos)
                 rect = surface.get_rect(
-                    topleft=self.origin + pygame.Vector2(current_cell) * TILE_SIZE
+                    topleft=self.origin + pygame.Vector2(cell) * TILE_SIZE
                 )
             # object
             else:
