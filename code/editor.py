@@ -1,11 +1,14 @@
+import datetime
 import sys
 from os import path
 from random import choice, randint
 
 import pygame
+import pygame_gui
 from canvas_object import CanvasObject, PlayerObject, SkyHandle
 from canvas_tile import CanvasTile
 from menu import Menu
+from pygame_gui.windows import UIFileDialog
 from settings import (
     ANIMATION_SPEED,
     HORIZON_COLOR,
@@ -33,6 +36,8 @@ class Editor:
         self.window_width = self.display_surface.get_width()
         self.window_height = self.display_surface.get_height()
         self.switch_mode = switch_mode
+        self.gui_manager = pygame_gui.UIManager((self.window_width, self.window_height))
+        self.file_dialog = None
 
         # menu setup
         self.menu = Menu()
@@ -97,6 +102,50 @@ class Editor:
             self.origin,
             [self.canvas_objects, self.foreground_objects],
         )
+
+    def event_loop(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (
+                event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
+            ):
+                pygame.quit()
+                sys.exit()
+
+            # gui events
+            if (
+                event.type == pygame_gui.UI_WINDOW_CLOSE
+                and event.ui_element == self.file_dialog
+            ):
+                self.file_dialog = None
+
+            if event.type == pygame_gui.UI_FILE_DIALOG_PATH_PICKED:
+                self.import_grid(event.text)
+
+            self.gui_manager.process_events(event)
+
+            # reset the origin
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_o:
+                self.origin = pygame.Vector2(0, 0)
+
+            # switch to the game
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                self.switch_mode(self.create_grid())
+
+            # export the grid
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
+                self.export_grid()
+
+            # import the grid
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_i:
+                self.prompt_file()
+
+            # editor events
+            self.create_clouds(event)
+            self.pan_input(event)
+            self.selection_hotkeys(event)
+            self.menu_click(event)
+            self.object_drag(event)
+            self.canvas_click(event)
 
     def import_animations(self):
         for index, item in enumerate(self.menu.menu_items):
@@ -195,28 +244,35 @@ class Editor:
 
         return layers
 
-    def event_loop(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT or (
-                event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
-            ):
-                pygame.quit()
-                sys.exit()
+    def prompt_file(self):
+        self.file_dialog = UIFileDialog(
+            pygame.Rect(
+                self.window_width // 2 - 200, self.window_height // 2 - 200, 400, 400
+            ),
+            self.gui_manager,
+            window_title="Load grid...",
+            initial_file_path="../levels",
+            allow_picking_directories=True,
+            allow_existing_files_only=True,
+            allowed_suffixes={"txt": "Text files"},
+        )
 
-            # reset the origin
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_o:
-                self.origin = pygame.Vector2(0, 0)
+    def export_grid(self):
+        grid = self.create_grid()
+        save_path = path.join("..", "levels")
+        current_date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_name = path.join(save_path, f"level_{current_date_time}.txt")
+        with open(file_name, "x") as file:
+            file.write(str(grid))
 
-            # switch to the game
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                self.switch_mode(self.create_grid())
-
-            self.create_clouds(event)
-            self.pan_input(event)
-            self.selection_hotkeys(event)
-            self.menu_click(event)
-            self.object_drag(event)
-            self.canvas_click(event)
+    def import_grid(self, file_name):
+        if not file_name:
+            self.prompt_file()
+        else:
+            with open(file_name, "r") as file:
+                grid = file.read()
+                grid_dict = eval(grid)
+                print(grid_dict)
 
     def toggle_pan(self):
         self.pan_active = not self.pan_active
@@ -224,6 +280,9 @@ class Editor:
             self.pan_offset = pygame.Vector2(pygame.mouse.get_pos()) - self.origin
 
     def pan_input(self, event):
+        if self.file_dialog:
+            return
+
         # mouse wheel
         if event.type == pygame.MOUSEWHEEL:
             if pygame.key.get_pressed()[pygame.K_LSHIFT]:
@@ -262,6 +321,13 @@ class Editor:
             )
 
     def object_drag(self, event):
+        if self.file_dialog:
+            for sprite in self.canvas_objects:
+                if sprite.selected:
+                    sprite.drag_end(self.origin)
+                    self.object_drag_active = False
+            return
+
         # start dragging
         if event.type == pygame.MOUSEBUTTONDOWN and pygame.mouse.get_pressed()[0]:
             for sprite in self.canvas_objects:
@@ -314,6 +380,9 @@ class Editor:
         ) // TILE_SIZE
 
     def canvas_click(self, event):
+        if self.file_dialog:
+            return
+
         if self.object_drag_active:
             return
 
@@ -613,6 +682,7 @@ class Editor:
 
     def run(self, dt):
         self.event_loop()
+        self.gui_manager.update(dt)
         self.frame_index += ANIMATION_SPEED * dt
         self.canvas_objects.update(dt)
         self.update_clouds(dt)
@@ -626,3 +696,4 @@ class Editor:
         self.preview()
         self.hover()
         self.menu.display(self.selected_index)
+        self.gui_manager.draw_ui(self.display_surface)
