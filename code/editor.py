@@ -27,11 +27,12 @@ from utils import import_folder
 
 
 class Editor:
-    def __init__(self, land_tiles):
-        # display setup
+    def __init__(self, land_tile_types, switch_mode):
+        # main setup
         self.display_surface = pygame.display.get_surface()
         self.window_width = self.display_surface.get_width()
         self.window_height = self.display_surface.get_height()
+        self.switch_mode = switch_mode
 
         # menu setup
         self.menu = Menu()
@@ -39,7 +40,7 @@ class Editor:
 
         # assets setup
         self.canvas_data = {}
-        self.land_tile_types = land_tiles
+        self.land_tile_types = land_tile_types
         self.water_bottom = pygame.image.load(
             path.join("..", "graphics", "terrain", "water", "water_bottom.png")
         ).convert_alpha()
@@ -206,9 +207,9 @@ class Editor:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_o:
                 self.origin = pygame.Vector2(0, 0)
 
-            # print the grid
+            # switch to the game
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                print(self.create_grid())
+                self.switch_mode(self.create_grid())
 
             self.create_clouds(event)
             self.pan_input(event)
