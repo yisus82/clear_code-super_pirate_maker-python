@@ -72,6 +72,8 @@ class Editor:
 
         # objects
         self.canvas_objects = pygame.sprite.Group()
+        self.foreground_objects = pygame.sprite.Group()
+        self.background_objects = pygame.sprite.Group()
         self.object_drag_active = False
         self.object_timer = Timer(400)
 
@@ -82,7 +84,7 @@ class Editor:
             (200, self.window_height / 2),
             self.player_animations,
             self.origin,
-            [self.canvas_objects],
+            [self.canvas_objects, self.foreground_objects],
         )
 
         # sky
@@ -92,7 +94,7 @@ class Editor:
             (self.window_width / 2, self.window_height / 2),
             [self.sky_handle_surf],
             self.origin,
-            [self.canvas_objects],
+            [self.canvas_objects, self.foreground_objects],
         )
 
     def import_animations(self):
@@ -126,9 +128,13 @@ class Editor:
                 pygame.Vector2(cell) * TILE_SIZE
             )
             if cell in self.canvas_data:
-                self.canvas_data[cell].add_item(obj.item_type, obj.item_id, offset)
+                self.canvas_data[cell].add_item(
+                    obj.item_type, obj.item_id, offset, obj.background
+                )
             else:
-                self.canvas_data[cell] = CanvasTile(obj.item_type, obj.item_id, offset)
+                self.canvas_data[cell] = CanvasTile(
+                    obj.item_type, obj.item_id, offset, obj.background
+                )
 
         # create an empty grid
         layers = {
@@ -168,13 +174,9 @@ class Editor:
             if tile.enemy:
                 layers["enemy"][x, y] = tile.enemy
 
-            if tile.objects:
-                for item_type, item_id, offset in tile.objects:
-                    if item_type == "palm_bg":
-                        layers["background"][(int(x + offset.x), int(y + offset.y))] = (
-                            item_id
-                        )
-                    elif item_type == "player":
+            if tile.foreground_objects:
+                for item_type, item_id, offset in tile.foreground_objects:
+                    if item_type == "player":
                         layers["player"][(int(x + offset.x), int(y + offset.y))] = (
                             "idle_right"
                         )
@@ -184,6 +186,11 @@ class Editor:
                         layers["foreground"][(int(x + offset.x), int(y + offset.y))] = (
                             item_id
                         )
+            elif tile.background_objects:
+                for item_type, item_id, offset in tile.background_objects:
+                    layers["background"][(int(x + offset.x), int(y + offset.y))] = (
+                        item_id
+                    )
 
         return layers
 
@@ -342,13 +349,20 @@ class Editor:
                     # objects
                     else:
                         if not self.object_timer.active:
+                            groups = (
+                                [self.canvas_objects, self.background_objects]
+                                if item_type == "palm_bg"
+                                else [self.canvas_objects, self.foreground_objects]
+                            )
+                            background = True if item_type == "palm_bg" else False
                             CanvasObject(
                                 mouse_pos,
                                 self.animations[self.selected_index],
                                 self.origin,
-                                [self.canvas_objects],
+                                groups,
                                 item_type,
                                 self.selected_index,
+                                background,
                             )
                             self.object_timer.activate()
                 # right click (delete items)
@@ -398,8 +412,8 @@ class Editor:
         return cell[0] * TILE_SIZE + self.origin.x, cell[1] * TILE_SIZE + self.origin.y
 
     def draw_level(self):
-        # objects
-        self.canvas_objects.draw(self.display_surface)
+        # background objects
+        self.background_objects.draw(self.display_surface)
 
         # tiles
         for cell, tile in self.canvas_data.items():
@@ -444,6 +458,9 @@ class Editor:
                     midbottom=(pos[0] + TILE_SIZE // 2, pos[1] + TILE_SIZE)
                 )
                 self.display_surface.blit(surface, rect)
+
+        # foreground objects
+        self.foreground_objects.draw(self.display_surface)
 
     def hover(self):
         mouse_pos = pygame.mouse.get_pos()

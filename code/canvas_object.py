@@ -3,10 +3,20 @@ from settings import ANIMATION_SPEED
 
 
 class CanvasObject(pygame.sprite.Sprite):
-    def __init__(self, pos, frames, origin, groups, item_type="object", item_id=None):
+    def __init__(
+        self,
+        pos,
+        frames,
+        origin,
+        groups,
+        item_type="object",
+        item_id=None,
+        background=False,
+    ):
         super().__init__(groups)
         self.item_type = item_type
         self.item_id = item_id
+        self.background = background
 
         # animation
         self.frames = frames
