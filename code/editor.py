@@ -1,3 +1,4 @@
+import ast
 import datetime
 import sys
 from os import path
@@ -8,7 +9,7 @@ import pygame_gui
 from canvas_object import CanvasObject, PlayerObject, SkyHandle
 from canvas_tile import CanvasTile
 from menu import Menu
-from pygame_gui.windows import UIFileDialog
+from pygame_gui.windows import UIConfirmationDialog, UIFileDialog, UIMessageWindow
 from settings import (
     ANIMATION_SPEED,
     HORIZON_COLOR,
@@ -36,8 +37,20 @@ class Editor:
         self.window_width = self.display_surface.get_width()
         self.window_height = self.display_surface.get_height()
         self.switch_mode = switch_mode
+
+        # gui setup
         self.gui_manager = pygame_gui.UIManager((self.window_width, self.window_height))
-        self.file_dialog = None
+        self.gui_manager.preload_fonts(
+            [
+                {
+                    "name": "noto_sans",
+                    "point_size": 14,
+                    "style": "bold",
+                    "antialiased": "1",
+                }
+            ]
+        )
+        self.opened_dialog = None
 
         # menu setup
         self.menu = Menu()
@@ -105,23 +118,25 @@ class Editor:
 
     def event_loop(self):
         for event in pygame.event.get():
+            # gui events
+            if (
+                event.type == pygame_gui.UI_WINDOW_CLOSE
+                and event.ui_element == self.opened_dialog
+            ):
+                self.opened_dialog = None
+            if event.type == pygame_gui.UI_FILE_DIALOG_PATH_PICKED:
+                self.import_grid(event.text)
+            if event.type == pygame_gui.UI_CONFIRMATION_DIALOG_CONFIRMED:
+                self.export_grid()
+            self.gui_manager.process_events(event)
+            if self.opened_dialog:
+                continue
+
             if event.type == pygame.QUIT or (
                 event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
             ):
                 pygame.quit()
                 sys.exit()
-
-            # gui events
-            if (
-                event.type == pygame_gui.UI_WINDOW_CLOSE
-                and event.ui_element == self.file_dialog
-            ):
-                self.file_dialog = None
-
-            if event.type == pygame_gui.UI_FILE_DIALOG_PATH_PICKED:
-                self.import_grid(event.text)
-
-            self.gui_manager.process_events(event)
 
             # reset the origin
             if event.type == pygame.KEYDOWN and event.key == pygame.K_o:
@@ -133,7 +148,7 @@ class Editor:
 
             # export the grid
             if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
-                self.export_grid()
+                self.confirm_export()
 
             # import the grid
             if event.type == pygame.KEYDOWN and event.key == pygame.K_i:
@@ -239,7 +254,7 @@ class Editor:
         return layers
 
     def prompt_file(self):
-        self.file_dialog = UIFileDialog(
+        self.opened_dialog = UIFileDialog(
             pygame.Rect(
                 self.window_width // 2 - 200, self.window_height // 2 - 200, 400, 400
             ),
@@ -251,6 +266,28 @@ class Editor:
             allowed_suffixes={"txt": "Text files"},
         )
 
+    def confirm_export(self):
+        self.opened_dialog = UIConfirmationDialog(
+            rect=pygame.Rect(
+                self.window_width // 2 - 200, self.window_height // 2 - 200, 400, 200
+            ),
+            manager=self.gui_manager,
+            window_title="Export grid...",
+            action_long_desc="The grid will be saved as a text file in the 'levels' folder.",
+            action_short_name="Confirm",
+            blocking=True,
+        )
+
+    def export_success(self, file_name):
+        self.opened_dialog = UIMessageWindow(
+            rect=pygame.Rect(
+                self.window_width // 2 - 200, self.window_height // 2 - 200, 400, 200
+            ),
+            manager=self.gui_manager,
+            window_title="Export successful",
+            html_message=f"The grid was successfully exported as <b>{file_name}</b> in the 'levels' folder.",
+        )
+
     def export_grid(self):
         grid = self.create_grid()
         save_path = path.join("..", "levels")
@@ -258,6 +295,7 @@ class Editor:
         file_name = path.join(save_path, f"level_{current_date_time}.txt")
         with open(file_name, "x") as file:
             file.write(str(grid))
+        self.export_success(f"level_{current_date_time}.txt")
 
     def import_grid(self, file_name):
         if not file_name:
@@ -265,7 +303,25 @@ class Editor:
         else:
             with open(file_name, "r") as file:
                 grid = file.read()
-                grid_dict = eval(grid)
+                try:
+                    grid_dict = ast.literal_eval(grid)
+                except (
+                    ValueError,
+                    TypeError,
+                    SyntaxError,
+                    MemoryError,
+                    RecursionError,
+                ):
+                    print("Invalid grid format")
+                    return
+
+                if (
+                    grid_dict is None
+                    or not grid_dict["player"]
+                    or not grid_dict["sky_handle"]
+                ):
+                    print("Invalid grid format")
+                    return
 
                 # reset origin
                 self.origin = pygame.Vector2(0, 0)
@@ -297,70 +353,80 @@ class Editor:
                     )
 
                 # water
-                for position in grid_dict["water"].keys():
-                    cell = self.get_cell(position)
-                    if cell not in self.canvas_data:
-                        self.canvas_data[cell] = CanvasTile("water", 1)
-                    else:
-                        self.canvas_data[cell].add_item("water", 1)
-                    self.check_neighbors(cell)
+                if grid_dict["water"]:
+                    for position in grid_dict["water"].keys():
+                        cell = self.get_cell(position)
+                        if cell not in self.canvas_data:
+                            self.canvas_data[cell] = CanvasTile("water", 1)
+                        else:
+                            self.canvas_data[cell].add_item("water", 1)
+                        self.check_neighbors(cell)
 
                 # land
-                for position in grid_dict["land"].keys():
-                    cell = self.get_cell(position)
-                    if cell not in self.canvas_data:
-                        self.canvas_data[cell] = CanvasTile("land", 0)
-                    else:
-                        self.canvas_data[cell].add_item("land", 0)
-                    self.check_neighbors(cell)
+                if grid_dict["land"]:
+                    for position in grid_dict["land"].keys():
+                        cell = self.get_cell(position)
+                        if cell not in self.canvas_data:
+                            self.canvas_data[cell] = CanvasTile("land", 0)
+                        else:
+                            self.canvas_data[cell].add_item("land", 0)
+                        self.check_neighbors(cell)
 
                 # coin
-                for position, item_id in grid_dict["coin"].items():
-                    cell = self.get_cell(position)
-                    if cell not in self.canvas_data:
-                        self.canvas_data[cell] = CanvasTile("coin", item_id)
-                    else:
-                        self.canvas_data[cell].add_item("coin", item_id)
+                if grid_dict["coin"]:
+                    for position, item_id in grid_dict["coin"].items():
+                        cell = self.get_cell(position)
+                        if cell not in self.canvas_data:
+                            self.canvas_data[cell] = CanvasTile("coin", item_id)
+                        else:
+                            self.canvas_data[cell].add_item("coin", item_id)
 
                 # enemy
-                for position, item_id in grid_dict["enemy"].items():
-                    cell = self.get_cell(position)
-                    if cell not in self.canvas_data:
-                        self.canvas_data[cell] = CanvasTile("enemy", item_id)
-                    else:
-                        self.canvas_data[cell].add_item("enemy", item_id)
+                if grid_dict["enemy"]:
+                    for position, item_id in grid_dict["enemy"].items():
+                        cell = self.get_cell(position)
+                        if cell not in self.canvas_data:
+                            self.canvas_data[cell] = CanvasTile("enemy", item_id)
+                        else:
+                            self.canvas_data[cell].add_item("enemy", item_id)
 
                 # foreground
-                for position, item_id in grid_dict["foreground"].items():
-                    item_type = (
-                        self.menu.menu_items[item_id].split("_")[0].replace(" ", "_")
-                    )
-                    CanvasObject(
-                        position,
-                        self.animations[item_id],
-                        self.origin,
-                        [self.canvas_objects, self.foreground_objects],
-                        item_type,
-                        item_id,
-                        False,
-                        False,
-                    )
+                if grid_dict["foreground"]:
+                    for position, item_id in grid_dict["foreground"].items():
+                        item_type = (
+                            self.menu.menu_items[item_id]
+                            .split("_")[0]
+                            .replace(" ", "_")
+                        )
+                        CanvasObject(
+                            position,
+                            self.animations[item_id],
+                            self.origin,
+                            [self.canvas_objects, self.foreground_objects],
+                            item_type,
+                            item_id,
+                            False,
+                            False,
+                        )
 
                 # background
-                for position, item_id in grid_dict["background"].items():
-                    item_type = (
-                        self.menu.menu_items[item_id].split("_")[0].replace(" ", "_")
-                    )
-                    CanvasObject(
-                        position,
-                        self.animations[item_id],
-                        self.origin,
-                        [self.canvas_objects, self.background_objects],
-                        item_type,
-                        item_id,
-                        True,
-                        False,
-                    )
+                if grid_dict["background"]:
+                    for position, item_id in grid_dict["background"].items():
+                        item_type = (
+                            self.menu.menu_items[item_id]
+                            .split("_")[0]
+                            .replace(" ", "_")
+                        )
+                        CanvasObject(
+                            position,
+                            self.animations[item_id],
+                            self.origin,
+                            [self.canvas_objects, self.background_objects],
+                            item_type,
+                            item_id,
+                            True,
+                            False,
+                        )
 
     def toggle_pan(self):
         self.pan_active = not self.pan_active
@@ -368,9 +434,6 @@ class Editor:
             self.pan_offset = pygame.Vector2(pygame.mouse.get_pos()) - self.origin
 
     def pan_input(self, event):
-        if self.file_dialog:
-            return
-
         # mouse wheel
         if event.type == pygame.MOUSEWHEEL:
             if pygame.key.get_pressed()[pygame.K_LSHIFT]:
@@ -409,13 +472,6 @@ class Editor:
             )
 
     def object_drag(self, event):
-        if self.file_dialog:
-            for sprite in self.canvas_objects:
-                if sprite.selected:
-                    sprite.drag_end(self.origin)
-                    self.object_drag_active = False
-            return
-
         # start dragging
         if event.type == pygame.MOUSEBUTTONDOWN and pygame.mouse.get_pressed()[0]:
             for sprite in self.canvas_objects:
@@ -468,9 +524,6 @@ class Editor:
         ) // TILE_SIZE
 
     def canvas_click(self, event):
-        if self.file_dialog:
-            return
-
         if self.object_drag_active:
             return
 
