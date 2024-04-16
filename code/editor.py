@@ -86,7 +86,7 @@ class Editor:
         # player
         player_path = path.join("..", "graphics", "player", "idle_right")
         self.player_animations = import_folder(player_path)
-        PlayerObject(
+        self.player = PlayerObject(
             (200, self.window_height / 2),
             self.player_animations,
             self.origin,
@@ -189,6 +189,7 @@ class Editor:
         # create an empty grid
         layers = {
             "player": {},
+            "sky_handle": {},
             "water": {},
             "land": {},
             "coin": {},
@@ -197,16 +198,10 @@ class Editor:
             "background": {},
         }
 
-        # grid offset
-        left = sorted(self.canvas_data.keys(), key=lambda tile: tile[0])[0][0]
-        top = sorted(self.canvas_data.keys(), key=lambda tile: tile[1])[0][1]
-
         # fill the grid
         for tile_pos, tile in self.canvas_data.items():
-            row_adjusted = tile_pos[1] - top
-            col_adjusted = tile_pos[0] - left
-            x = col_adjusted * TILE_SIZE
-            y = row_adjusted * TILE_SIZE
+            x = tile_pos[0] * TILE_SIZE
+            y = tile_pos[1] * TILE_SIZE
 
             if tile.has_water:
                 layers["water"][(x, y)] = tile.get_water_position()
@@ -224,23 +219,22 @@ class Editor:
             if tile.enemy:
                 layers["enemy"][x, y] = tile.enemy
 
-            if tile.foreground_objects:
-                for item_type, item_id, offset in tile.foreground_objects:
-                    if item_type == "player":
-                        layers["player"][(int(x + offset.x), int(y + offset.y))] = (
-                            "idle_right"
-                        )
-                    elif item_type == "sky_handle":
-                        pass
-                    else:
-                        layers["foreground"][(int(x + offset.x), int(y + offset.y))] = (
-                            item_id
-                        )
-            elif tile.background_objects:
-                for item_type, item_id, offset in tile.background_objects:
-                    layers["background"][(int(x + offset.x), int(y + offset.y))] = (
+            for item_type, item_id, offset in tile.foreground_objects:
+                if item_type == "player":
+                    layers["player"][(int(x + offset.x), int(y + offset.y))] = (
+                        "idle_right"
+                    )
+                elif item_type == "sky_handle":
+                    layers["sky_handle"][(int(x + offset.x), int(y + offset.y))] = (
+                        "sky_handle"
+                    )
+                else:
+                    layers["foreground"][(int(x + offset.x), int(y + offset.y))] = (
                         item_id
                     )
+
+            for item_type, item_id, offset in tile.background_objects:
+                layers["background"][(int(x + offset.x), int(y + offset.y))] = item_id
 
         return layers
 
@@ -272,7 +266,101 @@ class Editor:
             with open(file_name, "r") as file:
                 grid = file.read()
                 grid_dict = eval(grid)
-                print(grid_dict)
+
+                # reset origin
+                self.origin = pygame.Vector2(0, 0)
+
+                # clear the canvas
+                self.canvas_data.clear()
+                self.canvas_objects.empty()
+                self.background_objects.empty()
+                self.foreground_objects.empty()
+
+                # player
+                for position in grid_dict["player"].keys():
+                    self.player = PlayerObject(
+                        position,
+                        self.player_animations,
+                        self.origin,
+                        [self.canvas_objects, self.foreground_objects],
+                        False,
+                    )
+
+                # sky handle
+                for position in grid_dict["sky_handle"].keys():
+                    self.sky_handle = SkyHandle(
+                        position,
+                        [self.sky_handle_surf],
+                        self.origin,
+                        [self.canvas_objects, self.foreground_objects],
+                        False,
+                    )
+
+                # water
+                for position in grid_dict["water"].keys():
+                    cell = self.get_cell(position)
+                    if cell not in self.canvas_data:
+                        self.canvas_data[cell] = CanvasTile("water", 1)
+                    else:
+                        self.canvas_data[cell].add_item("water", 1)
+                    self.check_neighbors(cell)
+
+                # land
+                for position in grid_dict["land"].keys():
+                    cell = self.get_cell(position)
+                    if cell not in self.canvas_data:
+                        self.canvas_data[cell] = CanvasTile("land", 0)
+                    else:
+                        self.canvas_data[cell].add_item("land", 0)
+                    self.check_neighbors(cell)
+
+                # coin
+                for position, item_id in grid_dict["coin"].items():
+                    cell = self.get_cell(position)
+                    if cell not in self.canvas_data:
+                        self.canvas_data[cell] = CanvasTile("coin", item_id)
+                    else:
+                        self.canvas_data[cell].add_item("coin", item_id)
+
+                # enemy
+                for position, item_id in grid_dict["enemy"].items():
+                    cell = self.get_cell(position)
+                    if cell not in self.canvas_data:
+                        self.canvas_data[cell] = CanvasTile("enemy", item_id)
+                    else:
+                        self.canvas_data[cell].add_item("enemy", item_id)
+
+                # foreground
+                for position, item_id in grid_dict["foreground"].items():
+                    item_type = (
+                        self.menu.menu_items[item_id].split("_")[0].replace(" ", "_")
+                    )
+                    CanvasObject(
+                        position,
+                        self.animations[item_id],
+                        self.origin,
+                        [self.canvas_objects, self.foreground_objects],
+                        item_type,
+                        item_id,
+                        False,
+                        False,
+                    )
+
+                # background
+                for position, item_id in grid_dict["background"].items():
+                    item_type = (
+                        self.menu.menu_items[item_id].split("_")[0].replace(" ", "_")
+                    )
+                    CanvasObject(
+                        position,
+                        self.animations[item_id],
+                        self.origin,
+                        [self.canvas_objects, self.background_objects],
+                        item_type,
+                        item_id,
+                        True,
+                        False,
+                    )
 
     def toggle_pan(self):
         self.pan_active = not self.pan_active
@@ -419,12 +507,12 @@ class Editor:
                     # objects
                     else:
                         if not self.object_timer.active:
+                            background = True if item_type == "palm_bg" else False
                             groups = (
                                 [self.canvas_objects, self.background_objects]
-                                if item_type == "palm_bg"
+                                if background
                                 else [self.canvas_objects, self.foreground_objects]
                             )
-                            background = True if item_type == "palm_bg" else False
                             CanvasObject(
                                 mouse_pos,
                                 self.animations[self.selected_index],

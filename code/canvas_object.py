@@ -12,6 +12,7 @@ class CanvasObject(pygame.sprite.Sprite):
         item_type="object",
         item_id=None,
         background=False,
+        centered=True,
     ):
         super().__init__(groups)
         self.item_type = item_type
@@ -24,7 +25,11 @@ class CanvasObject(pygame.sprite.Sprite):
 
         # image
         self.image = self.frames[self.frame_index]
-        self.rect = self.image.get_rect(center=pos)
+        self.rect = (
+            self.image.get_rect(center=pos)
+            if centered
+            else self.image.get_rect(topleft=pos)
+        )
 
         # movement
         self.distance_to_origin = pygame.Vector2(self.rect.topleft) - origin
@@ -60,10 +65,10 @@ class CanvasObject(pygame.sprite.Sprite):
 
 
 class PlayerObject(CanvasObject):
-    def __init__(self, pos, frames, origin, groups):
-        super().__init__(pos, frames, origin, groups, "player")
+    def __init__(self, pos, frames, origin, groups, centered=True):
+        super().__init__(pos, frames, origin, groups, "player", centered=centered)
 
 
 class SkyHandle(CanvasObject):
-    def __init__(self, pos, frames, origin, groups):
-        super().__init__(pos, frames, origin, groups, "sky_handle")
+    def __init__(self, pos, frames, origin, groups, centered=True):
+        super().__init__(pos, frames, origin, groups, "sky_handle", centered=centered)
