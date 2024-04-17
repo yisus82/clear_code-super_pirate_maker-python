@@ -278,14 +278,20 @@ class Editor:
             blocking=True,
         )
 
-    def export_success(self, file_name):
+    def show_info(self, title="Info", message=""):
         self.opened_dialog = UIMessageWindow(
             rect=pygame.Rect(
                 self.window_width // 2 - 200, self.window_height // 2 - 200, 400, 200
             ),
             manager=self.gui_manager,
-            window_title="Export successful",
-            html_message=f"The grid was successfully exported as <b>{file_name}</b> in the 'levels' folder.",
+            window_title=title,
+            html_message=message,
+        )
+
+    def export_success(self, file_name):
+        self.show_info(
+            "Export success",
+            f"The grid was successfully exported as <b>{file_name}</b> in the 'levels' folder.",
         )
 
     def export_grid(self):
@@ -312,16 +318,30 @@ class Editor:
                     MemoryError,
                     RecursionError,
                 ):
-                    print("Invalid grid format")
+                    self.show_info("Error", "Invalid grid format")
                     return
 
                 if (
                     grid_dict is None
+                    or not isinstance(grid_dict, dict)
                     or not grid_dict["player"]
+                    or not isinstance(grid_dict["player"], dict)
+                    or len(grid_dict["player"].items()) != 1
                     or not grid_dict["sky_handle"]
+                    or not isinstance(grid_dict["sky_handle"], dict)
+                    or len(grid_dict["sky_handle"].items()) != 1
                 ):
-                    print("Invalid grid format")
+                    self.show_info("Error", "Invalid grid format")
                     return
+
+                # save originally placed objects
+                original_origin = self.origin
+                original_player = self.player
+                original_sky_handle = self.sky_handle
+                original_canvas_data = self.canvas_data.copy()
+                original_objects = self.canvas_objects.copy()
+                original_background_objects = self.background_objects.copy()
+                original_foreground_objects = self.foreground_objects.copy()
 
                 # reset origin
                 self.origin = pygame.Vector2(0, 0)
@@ -332,8 +352,9 @@ class Editor:
                 self.background_objects.empty()
                 self.foreground_objects.empty()
 
-                # player
-                for position in grid_dict["player"].keys():
+                try:
+                    # player
+                    position = list(grid_dict["player"].keys())[0]
                     self.player = PlayerObject(
                         position,
                         self.player_animations,
@@ -342,8 +363,8 @@ class Editor:
                         False,
                     )
 
-                # sky handle
-                for position in grid_dict["sky_handle"].keys():
+                    # sky handle
+                    position = list(grid_dict["sky_handle"].keys())[0]
                     self.sky_handle = SkyHandle(
                         position,
                         [self.sky_handle_surf],
@@ -352,81 +373,102 @@ class Editor:
                         False,
                     )
 
-                # water
-                if grid_dict["water"]:
-                    for position in grid_dict["water"].keys():
-                        cell = self.get_cell(position)
-                        if cell not in self.canvas_data:
-                            self.canvas_data[cell] = CanvasTile("water", 1)
-                        else:
-                            self.canvas_data[cell].add_item("water", 1)
-                        self.check_neighbors(cell)
+                    # water
+                    if grid_dict["water"]:
+                        if not isinstance(grid_dict["water"], dict):
+                            raise ValueError
+                        for position in grid_dict["water"].keys():
+                            cell = self.get_cell(position)
+                            if cell not in self.canvas_data:
+                                self.canvas_data[cell] = CanvasTile("water", 1)
+                            else:
+                                self.canvas_data[cell].add_item("water", 1)
+                            self.check_neighbors(cell)
 
-                # land
-                if grid_dict["land"]:
-                    for position in grid_dict["land"].keys():
-                        cell = self.get_cell(position)
-                        if cell not in self.canvas_data:
-                            self.canvas_data[cell] = CanvasTile("land", 0)
-                        else:
-                            self.canvas_data[cell].add_item("land", 0)
-                        self.check_neighbors(cell)
+                    # land
+                    if grid_dict["land"]:
+                        if not isinstance(grid_dict["land"], dict):
+                            raise ValueError
+                        for position in grid_dict["land"].keys():
+                            cell = self.get_cell(position)
+                            if cell not in self.canvas_data:
+                                self.canvas_data[cell] = CanvasTile("land", 0)
+                            else:
+                                self.canvas_data[cell].add_item("land", 0)
+                            self.check_neighbors(cell)
 
-                # coin
-                if grid_dict["coin"]:
-                    for position, item_id in grid_dict["coin"].items():
-                        cell = self.get_cell(position)
-                        if cell not in self.canvas_data:
-                            self.canvas_data[cell] = CanvasTile("coin", item_id)
-                        else:
-                            self.canvas_data[cell].add_item("coin", item_id)
+                    # coin
+                    if grid_dict["coin"]:
+                        if not isinstance(grid_dict["coin"], dict):
+                            raise ValueError
+                        for position, item_id in grid_dict["coin"].items():
+                            cell = self.get_cell(position)
+                            if cell not in self.canvas_data:
+                                self.canvas_data[cell] = CanvasTile("coin", item_id)
+                            else:
+                                self.canvas_data[cell].add_item("coin", item_id)
 
-                # enemy
-                if grid_dict["enemy"]:
-                    for position, item_id in grid_dict["enemy"].items():
-                        cell = self.get_cell(position)
-                        if cell not in self.canvas_data:
-                            self.canvas_data[cell] = CanvasTile("enemy", item_id)
-                        else:
-                            self.canvas_data[cell].add_item("enemy", item_id)
+                    # enemy
+                    if grid_dict["enemy"]:
+                        if not isinstance(grid_dict["enemy"], dict):
+                            raise ValueError
+                        for position, item_id in grid_dict["enemy"].items():
+                            cell = self.get_cell(position)
+                            if cell not in self.canvas_data:
+                                self.canvas_data[cell] = CanvasTile("enemy", item_id)
+                            else:
+                                self.canvas_data[cell].add_item("enemy", item_id)
 
-                # foreground
-                if grid_dict["foreground"]:
-                    for position, item_id in grid_dict["foreground"].items():
-                        item_type = (
-                            self.menu.menu_items[item_id]
-                            .split("_")[0]
-                            .replace(" ", "_")
-                        )
-                        CanvasObject(
-                            position,
-                            self.animations[item_id],
-                            self.origin,
-                            [self.canvas_objects, self.foreground_objects],
-                            item_type,
-                            item_id,
-                            False,
-                            False,
-                        )
+                    # foreground
+                    if grid_dict["foreground"]:
+                        if not isinstance(grid_dict["foreground"], dict):
+                            raise ValueError
+                        for position, item_id in grid_dict["foreground"].items():
+                            item_type = (
+                                self.menu.menu_items[item_id]
+                                .split("_")[0]
+                                .replace(" ", "_")
+                            )
+                            CanvasObject(
+                                position,
+                                self.animations[item_id],
+                                self.origin,
+                                [self.canvas_objects, self.foreground_objects],
+                                item_type,
+                                item_id,
+                                False,
+                                False,
+                            )
 
-                # background
-                if grid_dict["background"]:
-                    for position, item_id in grid_dict["background"].items():
-                        item_type = (
-                            self.menu.menu_items[item_id]
-                            .split("_")[0]
-                            .replace(" ", "_")
-                        )
-                        CanvasObject(
-                            position,
-                            self.animations[item_id],
-                            self.origin,
-                            [self.canvas_objects, self.background_objects],
-                            item_type,
-                            item_id,
-                            True,
-                            False,
-                        )
+                    # background
+                    if grid_dict["background"]:
+                        if not isinstance(grid_dict["background"], dict):
+                            raise ValueError
+                        for position, item_id in grid_dict["background"].items():
+                            item_type = (
+                                self.menu.menu_items[item_id]
+                                .split("_")[0]
+                                .replace(" ", "_")
+                            )
+                            CanvasObject(
+                                position,
+                                self.animations[item_id],
+                                self.origin,
+                                [self.canvas_objects, self.background_objects],
+                                item_type,
+                                item_id,
+                                True,
+                                False,
+                            )
+                except Exception:
+                    self.show_info("Error", "Invalid grid format")
+                    self.origin = original_origin
+                    self.player = original_player
+                    self.sky_handle = original_sky_handle
+                    self.canvas_data = original_canvas_data
+                    self.canvas_objects = original_objects
+                    self.background_objects = original_background_objects
+                    self.foreground_objects = original_foreground_objects
 
     def toggle_pan(self):
         self.pan_active = not self.pan_active
