@@ -27,3 +27,19 @@ def import_folder_as_dict(folder):
             image_surfaces[image.split(".")[0]] = image_surface
 
     return image_surfaces
+
+
+def import_subfolders_as_list(folder):
+    pathname = path.normpath(folder)
+    image_surfaces = {}
+    for dirpath, __, img_files in walk(pathname):
+        if dirpath == pathname:
+            continue
+        dir_name = dirpath.split(path.sep)[-1]
+        image_surfaces[dir_name] = []
+        for image in img_files:
+            full_path = path.join(dirpath, image)
+            image_surface = pygame.image.load(full_path).convert_alpha()
+            image_surfaces[dir_name].append(image_surface)
+
+    return image_surfaces

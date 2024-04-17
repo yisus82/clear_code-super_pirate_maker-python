@@ -9,7 +9,6 @@ import pygame_gui
 from canvas_object import CanvasObject, PlayerObject, SkyHandle
 from canvas_tile import CanvasTile
 from menu import Menu
-from pygame_gui.windows import UIConfirmationDialog, UIFileDialog, UIMessageWindow
 from settings import (
     ANIMATION_SPEED,
     HORIZON_COLOR,
@@ -31,26 +30,13 @@ from utils import import_folder
 
 
 class Editor:
-    def __init__(self, land_tile_types, switch_mode):
+    def __init__(self, ui_manager, land_tile_types, switch_mode):
         # main setup
         self.display_surface = pygame.display.get_surface()
         self.window_width = self.display_surface.get_width()
         self.window_height = self.display_surface.get_height()
+        self.ui_manager = ui_manager
         self.switch_mode = switch_mode
-
-        # gui setup
-        self.gui_manager = pygame_gui.UIManager((self.window_width, self.window_height))
-        self.gui_manager.preload_fonts(
-            [
-                {
-                    "name": "noto_sans",
-                    "point_size": 14,
-                    "style": "bold",
-                    "antialiased": "1",
-                }
-            ]
-        )
-        self.opened_dialog = None
 
         # menu setup
         self.menu = Menu()
@@ -116,51 +102,50 @@ class Editor:
             [self.canvas_objects, self.foreground_objects],
         )
 
-    def event_loop(self):
-        for event in pygame.event.get():
-            # gui events
-            if (
-                event.type == pygame_gui.UI_WINDOW_CLOSE
-                and event.ui_element == self.opened_dialog
-            ):
-                self.opened_dialog = None
-            if event.type == pygame_gui.UI_FILE_DIALOG_PATH_PICKED:
-                self.import_grid(event.text)
-            if event.type == pygame_gui.UI_CONFIRMATION_DIALOG_CONFIRMED:
+    def process_event(self, event):
+        # gui events
+        if event.type == pygame_gui.UI_FILE_DIALOG_PATH_PICKED:
+            self.import_grid(event.text)
+        if event.type == pygame_gui.UI_CONFIRMATION_DIALOG_CONFIRMED:
+            if event.ui_object_id == "export":
                 self.export_grid()
-            self.gui_manager.process_events(event)
-            if self.opened_dialog:
-                continue
-
-            if event.type == pygame.QUIT or (
-                event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
-            ):
+            elif event.ui_object_id == "exit":
                 pygame.quit()
                 sys.exit()
-
-            # reset the origin
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_o:
-                self.origin = pygame.Vector2(0, 0)
-
-            # switch to the game
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+            elif event.ui_object_id == "switch_mode":
                 self.switch_mode(self.create_grid())
+        if self.ui_manager.opened_dialog:
+            return
 
-            # export the grid
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
-                self.confirm_export()
+        # quit the game
+        if event.type == pygame.QUIT or (
+            event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
+        ):
+            self.confirm_exit()
 
-            # import the grid
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_i:
-                self.prompt_file()
+        # reset the origin
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_o:
+            self.origin = pygame.Vector2(0, 0)
 
-            # editor events
-            self.create_clouds(event)
-            self.pan_input(event)
-            self.selection_hotkeys(event)
-            self.menu_click(event)
-            self.object_drag(event)
-            self.canvas_click(event)
+        # switch to the game
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+            self.confirm_switch_mode()
+
+        # export the grid
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
+            self.confirm_export()
+
+        # import the grid
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_i:
+            self.ui_manager.prompt_file()
+
+        # editor events
+        self.create_clouds(event)
+        self.pan_input(event)
+        self.selection_hotkeys(event)
+        self.menu_click(event)
+        self.object_drag(event)
+        self.canvas_click(event)
 
     def import_animations(self):
         for index, item in enumerate(self.menu.menu_items):
@@ -253,43 +238,16 @@ class Editor:
 
         return layers
 
-    def prompt_file(self):
-        self.opened_dialog = UIFileDialog(
-            pygame.Rect(
-                self.window_width // 2 - 200, self.window_height // 2 - 200, 400, 400
-            ),
-            self.gui_manager,
-            window_title="Load grid...",
-            initial_file_path="../levels",
-            allow_picking_directories=True,
-            allow_existing_files_only=True,
-            allowed_suffixes={"txt": "Text files"},
-        )
-
     def confirm_export(self):
-        self.opened_dialog = UIConfirmationDialog(
-            rect=pygame.Rect(
-                self.window_width // 2 - 200, self.window_height // 2 - 200, 400, 200
-            ),
-            manager=self.gui_manager,
-            window_title="Export grid...",
-            action_long_desc="The grid will be saved as a text file in the 'levels' folder.",
-            action_short_name="Confirm",
-            blocking=True,
-        )
-
-    def show_info(self, title="Info", message=""):
-        self.opened_dialog = UIMessageWindow(
-            rect=pygame.Rect(
-                self.window_width // 2 - 200, self.window_height // 2 - 200, 400, 200
-            ),
-            manager=self.gui_manager,
-            window_title=title,
-            html_message=message,
+        self.ui_manager.show_confirmation_dialog(
+            "Export grid...",
+            "The grid will be saved as a text file in the 'levels' folder.",
+            "Export",
+            "export",
         )
 
     def export_success(self, file_name):
-        self.show_info(
+        self.ui_manager.show_information_dialog(
             "Export success",
             f"The grid was successfully exported as <b>{file_name}</b> in the 'levels' folder.",
         )
@@ -863,9 +821,23 @@ class Editor:
         self.pan_timer.update()
         self.object_timer.update()
 
-    def run(self, dt):
-        self.event_loop()
-        self.gui_manager.update(dt)
+    def confirm_exit(self):
+        self.ui_manager.show_confirmation_dialog(
+            "Exit",
+            "Are you sure you want to exit the application?",
+            "Exit",
+            "exit",
+        )
+
+    def confirm_switch_mode(self):
+        self.ui_manager.show_confirmation_dialog(
+            "Switch mode",
+            "Are you sure you want to switch to the game?",
+            "Switch",
+            "switch_mode",
+        )
+
+    def update(self, dt):
         self.frame_index += ANIMATION_SPEED * dt
         self.canvas_objects.update(dt)
         self.update_clouds(dt)
@@ -879,4 +851,4 @@ class Editor:
         self.preview()
         self.hover()
         self.menu.display(self.selected_index)
-        self.gui_manager.draw_ui(self.display_surface)
+        self.ui_manager.display()

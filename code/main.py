@@ -5,7 +5,8 @@ from editor import Editor
 from level import Level
 from settings import FPS
 from transition import Transition
-from utils import import_folder_as_dict
+from ui_manager import UIManager
+from utils import import_folder_as_dict, import_subfolders_as_list
 
 
 class Game:
@@ -14,17 +15,22 @@ class Game:
         self.screen = pygame.display.set_mode((0, 0), pygame.RESIZABLE)
         pygame.display.set_caption("Super Pirate Maker")
         self.clock = pygame.time.Clock()
-        self.land_tile_types = self.import_land_tile_types()
+        self.assets = {}
+        self.import_assets()
         self.editor_active = True
         self.transition = Transition(self.toggle_editor)
-        self.editor = Editor(self.land_tile_types, self.switch_mode)
+        self.ui_manager = UIManager()
+        self.editor = Editor(self.ui_manager, self.assets["land"], self.switch_mode)
         self.level = None
         mouse_path = path.join("..", "graphics", "cursors", "mouse.png")
         mouse_surface = pygame.image.load(mouse_path).convert_alpha()
         self.mouse_cursor = pygame.cursors.Cursor((0, 0), mouse_surface)
 
-    def import_land_tile_types(self):
-        return import_folder_as_dict(path.join("..", "graphics", "terrain", "land"))
+    def import_assets(self):
+        land_path = path.join("..", "graphics", "terrain", "land")
+        self.assets["land"] = import_folder_as_dict(land_path)
+        player_path = path.join("..", "graphics", "player")
+        self.assets["player"] = import_subfolders_as_list(player_path)
 
     def toggle_editor(self):
         self.editor_active = not self.editor_active
@@ -32,19 +38,31 @@ class Game:
     def switch_mode(self, grid=None):
         self.transition.active = True
         if grid:
-            self.level = Level(grid, self.switch_mode)
+            self.level = Level(self.ui_manager, grid, self.switch_mode, self.assets)
 
     def run(self):
         while True:
             dt = self.clock.tick(FPS) / 1000
+            for event in pygame.event.get():
+                self.ui_manager.process_event(event)
+                if self.editor_active:
+                    self.editor.process_event(event)
+                else:
+                    self.level.process_event(event)
             if self.editor_active:
                 pygame.mouse.set_cursor(self.mouse_cursor)
                 pygame.mouse.set_visible(True)
-                self.editor.run(dt)
+                self.ui_manager.update(dt)
+                self.editor.update(dt)
             else:
                 pygame.mouse.set_visible(False)
-                self.level.run(dt)
-            self.transition.display(dt)
+                self.ui_manager.update(dt)
+                if self.ui_manager.opened_dialog:
+                    pygame.mouse.set_cursor(self.mouse_cursor)
+                    pygame.mouse.set_visible(True)
+                self.level.update(dt)
+            if self.transition.active:
+                self.transition.update(dt)
             pygame.display.update()
 
 
