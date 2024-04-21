@@ -29,9 +29,10 @@ class Level:
         )
 
         # land
-        for position, land_tile_type in self.grid["land"].items():
-            surface = self.assets["land"][land_tile_type]
-            Generic(position, surface, [self.all_sprites])
+        if "land" in self.grid:
+            for position, land_tile_type in self.grid["land"].items():
+                surface = self.assets["land"][land_tile_type]
+                Generic(position, surface, [self.all_sprites])
 
     def process_event(self, event):
         # gui events
