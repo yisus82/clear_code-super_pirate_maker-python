@@ -1,15 +1,10 @@
 import pygame
+from sprites import Animated
 
 
-class Player(pygame.sprite.Sprite):
+class Player(Animated):
     def __init__(self, position, groups, animations=[], status="idle_right"):
-        super().__init__(groups)
-        self.position = position
-        self.animations = animations
-        self.status = status
-        self.frame_index = 0
-        self.image = self.animations[self.status][self.frame_index]
-        self.rect = self.image.get_rect(topleft=self.position)
+        super().__init__(position, animations, groups, status)
         self.direction = pygame.Vector2()
         self.speed = 300
 
@@ -22,10 +17,20 @@ class Player(pygame.sprite.Sprite):
         else:
             self.direction.x = 0
 
+    def update_status(self):
+        direction = self.status.split("_")[1]
+        if self.direction.x == 1:
+            direction = "right"
+        elif self.direction.x == -1:
+            direction = "left"
+        self.status = f"idle_{direction}"
+
     def move(self, dt):
         self.position += self.direction * self.speed * dt
         self.rect.topleft = (round(self.position.x), round(self.position.y))
 
     def update(self, dt):
         self.input()
+        self.update_status()
         self.move(dt)
+        super().update(dt)
