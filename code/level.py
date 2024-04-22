@@ -4,7 +4,7 @@ import pygame
 import pygame_gui
 from player import Player
 from settings import SKY_COLOR
-from sprites import Animated, Generic
+from sprites import Animated, Coin, Generic
 
 
 class Level:
@@ -26,7 +26,10 @@ class Level:
         # player
         position, status = list(self.grid["player"].items())[0]
         self.player = Player(
-            position, [self.all_sprites], self.assets["player"], status
+            position,
+            [self.all_sprites, self.animated_sprites],
+            self.assets["player"],
+            status,
         )
 
         # land
@@ -50,11 +53,11 @@ class Level:
         # coin
         if "coin" in self.grid:
             for position, coin_type in self.grid["coin"].items():
-                Animated(
+                Coin(
+                    coin_type,
                     position,
                     self.assets["coin"][coin_type],
                     [self.all_sprites, self.animated_sprites],
-                    centered=True,
                 )
 
     def process_event(self, event):
@@ -96,6 +99,6 @@ class Level:
 
     def update(self, dt):
         self.display_surface.fill(SKY_COLOR)
-        self.all_sprites.update(dt)
+        self.animated_sprites.update(dt)
         self.all_sprites.draw(self.display_surface)
         self.ui_manager.display()

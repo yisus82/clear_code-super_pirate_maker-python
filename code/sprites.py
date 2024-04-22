@@ -43,3 +43,9 @@ class Animated(Generic):
 
     def update(self, dt):
         self.animate(dt)
+
+
+class Coin(Animated):
+    def __init__(self, coin_type, position, frames, groups):
+        super().__init__(position, frames, groups, centered=True)
+        self.coin_type = coin_type
