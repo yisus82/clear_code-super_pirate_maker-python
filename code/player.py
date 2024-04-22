@@ -23,7 +23,9 @@ class Player(Animated):
             direction = "right"
         elif self.direction.x == -1:
             direction = "left"
-        self.status = f"idle_{direction}"
+        self.status = (
+            f"idle_{direction}" if self.direction.x == 0 else f"run_{direction}"
+        )
 
     def move(self, dt):
         self.position += self.direction * self.speed * dt
