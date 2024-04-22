@@ -214,10 +214,12 @@ class Editor:
                 )
 
             if tile.coin:
-                layers["coin"][(x + TILE_SIZE // 2, y + TILE_SIZE // 2)] = tile.coin
+                layers["coin"][(x + TILE_SIZE // 2, y + TILE_SIZE // 2)] = (
+                    self.menu.get_menu_item(tile.coin)[1]
+                )
 
             if tile.enemy:
-                layers["enemy"][x, y] = tile.enemy
+                layers["enemy"][x, y] = self.menu.get_menu_item(tile.enemy)[1]
 
             for item_type, item_id, offset in tile.foreground_objects:
                 if item_type == "player":
@@ -230,11 +232,13 @@ class Editor:
                     )
                 else:
                     layers["foreground"][(int(x + offset.x), int(y + offset.y))] = (
-                        item_id
+                        self.menu.get_menu_item(item_id)
                     )
 
             for item_type, item_id, offset in tile.background_objects:
-                layers["background"][(int(x + offset.x), int(y + offset.y))] = item_id
+                layers["background"][(int(x + offset.x), int(y + offset.y))] = (
+                    self.menu.get_menu_item(item_id)
+                )
 
         return layers
 
@@ -276,7 +280,9 @@ class Editor:
                     MemoryError,
                     RecursionError,
                 ):
-                    self.show_info("Error", "Invalid grid format")
+                    self.ui_manager.show_information_dialog(
+                        "Error", "Invalid grid format"
+                    )
                     return
 
                 if (
@@ -289,7 +295,9 @@ class Editor:
                     or not isinstance(grid_dict["sky_handle"], dict)
                     or len(grid_dict["sky_handle"].items()) != 1
                 ):
-                    self.show_info("Error", "Invalid grid format")
+                    self.ui_manager.show_information_dialog(
+                        "Error", "Invalid grid format"
+                    )
                     return
 
                 # save originally placed objects
@@ -338,9 +346,15 @@ class Editor:
                         for position in grid_dict["water"].keys():
                             cell = self.get_cell(position)
                             if cell not in self.canvas_data:
-                                self.canvas_data[cell] = CanvasTile("water", 1)
+                                self.canvas_data[cell] = CanvasTile(
+                                    "water",
+                                    self.menu.get_menu_item_index("terrain", "water"),
+                                )
                             else:
-                                self.canvas_data[cell].add_item("water", 1)
+                                self.canvas_data[cell].add_item(
+                                    "water",
+                                    self.menu.get_menu_item_index("terrain", "water"),
+                                )
                             self.check_neighbors(cell)
 
                     # land
@@ -350,9 +364,15 @@ class Editor:
                         for position in grid_dict["land"].keys():
                             cell = self.get_cell(position)
                             if cell not in self.canvas_data:
-                                self.canvas_data[cell] = CanvasTile("land", 0)
+                                self.canvas_data[cell] = CanvasTile(
+                                    "land",
+                                    self.menu.get_menu_item_index("terrain", "land"),
+                                )
                             else:
-                                self.canvas_data[cell].add_item("land", 0)
+                                self.canvas_data[cell].add_item(
+                                    "land",
+                                    self.menu.get_menu_item_index("terrain", "land"),
+                                )
                             self.check_neighbors(cell)
 
                     # coin
@@ -362,9 +382,15 @@ class Editor:
                         for position, item_id in grid_dict["coin"].items():
                             cell = self.get_cell(position)
                             if cell not in self.canvas_data:
-                                self.canvas_data[cell] = CanvasTile("coin", item_id)
+                                self.canvas_data[cell] = CanvasTile(
+                                    "coin",
+                                    self.menu.get_menu_item_index("coin", item_id),
+                                )
                             else:
-                                self.canvas_data[cell].add_item("coin", item_id)
+                                self.canvas_data[cell].add_item(
+                                    "coin",
+                                    self.menu.get_menu_item_index("coin", item_id),
+                                )
 
                     # enemy
                     if grid_dict["enemy"]:
@@ -373,26 +399,31 @@ class Editor:
                         for position, item_id in grid_dict["enemy"].items():
                             cell = self.get_cell(position)
                             if cell not in self.canvas_data:
-                                self.canvas_data[cell] = CanvasTile("enemy", item_id)
+                                self.canvas_data[cell] = CanvasTile(
+                                    "enemy",
+                                    self.menu.get_menu_item_index("enemy", item_id),
+                                )
                             else:
-                                self.canvas_data[cell].add_item("enemy", item_id)
+                                self.canvas_data[cell].add_item(
+                                    "enemy",
+                                    self.menu.get_menu_item_index("enemy", item_id),
+                                )
 
                     # foreground
                     if grid_dict["foreground"]:
                         if not isinstance(grid_dict["foreground"], dict):
                             raise ValueError
-                        for position, item_id in grid_dict["foreground"].items():
-                            item_type = (
-                                self.menu.menu_items[item_id]
-                                .split("_")[0]
-                                .replace(" ", "_")
+                        for position, item in grid_dict["foreground"].items():
+                            menu_section, menu_item = item
+                            item_id = self.menu.get_menu_item_index(
+                                menu_section, menu_item
                             )
                             CanvasObject(
                                 position,
                                 self.animations[item_id],
                                 self.origin,
                                 [self.canvas_objects, self.foreground_objects],
-                                item_type,
+                                menu_section,
                                 item_id,
                                 False,
                                 False,
@@ -402,24 +433,25 @@ class Editor:
                     if grid_dict["background"]:
                         if not isinstance(grid_dict["background"], dict):
                             raise ValueError
-                        for position, item_id in grid_dict["background"].items():
-                            item_type = (
-                                self.menu.menu_items[item_id]
-                                .split("_")[0]
-                                .replace(" ", "_")
+                        for position, item in grid_dict["background"].items():
+                            menu_section, menu_item = item
+                            item_id = self.menu.get_menu_item_index(
+                                menu_section, menu_item
                             )
                             CanvasObject(
                                 position,
                                 self.animations[item_id],
                                 self.origin,
                                 [self.canvas_objects, self.background_objects],
-                                item_type,
+                                menu_section,
                                 item_id,
                                 True,
                                 False,
                             )
                 except Exception:
-                    self.show_info("Error", "Invalid grid format")
+                    self.ui_manager.show_information_dialog(
+                        "Error", "Invalid grid format"
+                    )
                     self.origin = original_origin
                     self.player = original_player
                     self.sky_handle = original_sky_handle

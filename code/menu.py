@@ -106,6 +106,20 @@ class Menu:
                     menu_button.switch_item()
                 return menu_button.get_menu_item_index()
 
+    def get_menu_item(self, index):
+        item = self.menu_items[index]
+        menu_section = item.split("_")[0].replace(" ", "_")
+        menu_item = item.split("_")[1].replace(" ", "_")
+        return menu_section, menu_item
+
+    def get_menu_item_index(self, menu_section, menu_item):
+        try:
+            section = menu_section.replace("_", " ")
+            item = menu_item.replace("_", " ")
+            return self.menu_items.index(f"{section}_{item}")
+        except ValueError:
+            return None
+
     def update_selected_item(self, index):
         menu_item = self.menu_items[index]
         menu_section = menu_item.split("_")[0].replace(" ", "_")

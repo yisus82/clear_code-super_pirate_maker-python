@@ -34,6 +34,24 @@ class Level:
                 surface = self.assets["land"][land_tile_type]
                 Generic(position, surface, [self.all_sprites])
 
+        # water
+        if "water" in self.grid:
+            for position, water_type in self.grid["water"].items():
+                if water_type == "top":
+                    surface = self.assets["water_top"]["idle"][0]
+                elif water_type == "bottom":
+                    surface = self.assets["water_bottom"]
+                Generic(position, surface, [self.all_sprites])
+
+        # coin
+        if "coin" in self.grid:
+            for position, coin_type in self.grid["coin"].items():
+                Generic(
+                    position,
+                    self.assets["coin"][coin_type]["idle"][0],
+                    [self.all_sprites],
+                )
+
     def process_event(self, event):
         # gui events
         if event.type == pygame_gui.UI_CONFIRMATION_DIALOG_CONFIRMED:

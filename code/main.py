@@ -3,7 +3,7 @@ from os import path
 import pygame
 from editor import Editor
 from level import Level
-from settings import FPS
+from settings import COIN_TYPES, FPS
 from transition import Transition
 from ui_manager import UIManager
 from utils import import_folder_as_dict, import_subfolders_as_list
@@ -31,6 +31,18 @@ class Game:
         self.assets["land"] = import_folder_as_dict(land_path)
         player_path = path.join("..", "graphics", "player")
         self.assets["player"] = import_subfolders_as_list(player_path)
+        water_bottom_path = path.join(
+            "..", "graphics", "terrain", "water", "water_bottom.png"
+        )
+        self.assets["water_bottom"] = pygame.image.load(
+            water_bottom_path
+        ).convert_alpha()
+        water_top_path = path.join("..", "graphics", "terrain", "water")
+        self.assets["water_top"] = import_subfolders_as_list(water_top_path)
+        self.assets["coin"] = {}
+        for value in COIN_TYPES:
+            coin_path = path.join("..", "graphics", "coin", value)
+            self.assets["coin"][value] = import_subfolders_as_list(coin_path)
 
     def toggle_editor(self):
         self.editor_active = not self.editor_active
