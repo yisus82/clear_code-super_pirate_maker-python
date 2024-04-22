@@ -4,7 +4,7 @@ import pygame
 import pygame_gui
 from player import Player
 from settings import SKY_COLOR
-from sprites import Generic
+from sprites import Animated, Generic
 
 
 class Level:
@@ -18,6 +18,7 @@ class Level:
         # assets setup
         self.assets = assets
         self.all_sprites = pygame.sprite.Group()
+        self.animated_sprites = pygame.sprite.Group()
         self.player = None
         self.build_level()
 
@@ -38,18 +39,22 @@ class Level:
         if "water" in self.grid:
             for position, water_type in self.grid["water"].items():
                 if water_type == "top":
-                    surface = self.assets["water_top"]["idle"][0]
+                    Animated(
+                        position,
+                        self.assets["water_top"],
+                        [self.all_sprites, self.animated_sprites],
+                    )
                 elif water_type == "bottom":
-                    surface = self.assets["water_bottom"]
-                Generic(position, surface, [self.all_sprites])
+                    Generic(position, self.assets["water_bottom"], [self.all_sprites])
 
         # coin
         if "coin" in self.grid:
             for position, coin_type in self.grid["coin"].items():
-                Generic(
+                Animated(
                     position,
-                    self.assets["coin"][coin_type]["idle"][0],
-                    [self.all_sprites],
+                    self.assets["coin"][coin_type],
+                    [self.all_sprites, self.animated_sprites],
+                    centered=True,
                 )
 
     def process_event(self, event):
