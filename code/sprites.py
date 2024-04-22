@@ -18,6 +18,7 @@ class Animated(Generic):
         groups=[],
         status="idle",
         centered=False,
+        bottom=False,
     ):
         super().__init__(position, frames[status][0], groups)
         self.status = status
@@ -26,10 +27,15 @@ class Animated(Generic):
         self.image = self.frames[self.status][self.frame_index]
         self.animation_speed = ANIMATION_SPEED
         self.centered = centered
+        self.bottom = bottom
         if self.centered:
-            self.rect = self.image.get_rect(center=position)
+            self.rect = self.image.get_rect(center=self.position)
+        elif self.bottom:
+            self.rect = self.image.get_rect(
+                bottomleft=(self.position[0], self.position[1] + TILE_SIZE)
+            )
         else:
-            self.rect = self.image.get_rect(topleft=position)
+            self.rect = self.image.get_rect(topleft=self.position)
 
     def animate(self, dt):
         self.frame_index += self.animation_speed * dt
@@ -38,6 +44,10 @@ class Animated(Generic):
         self.image = self.frames[self.status][int(self.frame_index)]
         if self.centered:
             self.rect = self.image.get_rect(center=self.position)
+        elif self.bottom:
+            self.rect = self.image.get_rect(
+                bottomleft=(self.position[0], self.position[1] + TILE_SIZE)
+            )
         else:
             self.rect = self.image.get_rect(topleft=self.position)
 

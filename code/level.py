@@ -2,6 +2,7 @@ import sys
 
 import pygame
 import pygame_gui
+from enemy import Enemy
 from player import Player
 from settings import SKY_COLOR
 from sprites import Animated, Coin, Generic
@@ -50,7 +51,7 @@ class Level:
                 elif water_type == "bottom":
                     Generic(position, self.assets["water_bottom"], [self.all_sprites])
 
-        # coin
+        # coins
         if "coin" in self.grid:
             for position, coin_type in self.grid["coin"].items():
                 Coin(
@@ -58,6 +59,16 @@ class Level:
                     position,
                     self.assets["coin"][coin_type],
                     [self.all_sprites, self.animated_sprites],
+                )
+
+        # enemies
+        if "enemy" in self.grid:
+            for position, enemy_type in self.grid["enemy"].items():
+                Enemy(
+                    enemy_type,
+                    position,
+                    [self.all_sprites, self.animated_sprites],
+                    self.assets["enemy"][enemy_type],
                 )
 
     def process_event(self, event):

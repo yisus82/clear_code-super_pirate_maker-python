@@ -3,7 +3,7 @@ from sprites import Animated
 
 
 class Player(Animated):
-    def __init__(self, position, groups, animations=[], status="idle_right"):
+    def __init__(self, position, groups, animations, status="idle_right"):
         super().__init__(position, animations, groups, status)
         self.direction = pygame.Vector2()
         self.speed = 300
