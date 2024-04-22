@@ -10,7 +10,7 @@ from settings import (
     MENU_MARGIN,
     MENU_SIZE,
     PALM_TYPES,
-    TERRAIN_DATA,
+    TERRAIN_TYPES,
 )
 
 
@@ -34,7 +34,7 @@ class Menu:
 
     def load_menu_items(self):
         # terrain
-        for key in TERRAIN_DATA.keys():
+        for key in TERRAIN_TYPES.keys():
             self.menu_items.append(f"terrain_{key}")
         # coins
         for value in COIN_TYPES:

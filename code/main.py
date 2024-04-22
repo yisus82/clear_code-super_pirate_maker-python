@@ -3,7 +3,7 @@ from os import path
 import pygame
 from editor import Editor
 from level import Level
-from settings import COIN_TYPES, ENEMY_TYPES, FPS
+from settings import BACKGROUND_TYPES, COIN_TYPES, ENEMY_TYPES, FOREGROUND_TYPES, FPS
 from transition import Transition
 from ui_manager import UIManager
 from utils import import_folder_as_dict, import_subfolders_as_list
@@ -58,6 +58,40 @@ class Game:
             enemy_type = value.replace(" ", "_")
             enemy_path = path.join("..", "graphics", "enemy", enemy_type)
             self.assets["enemy"][enemy_type] = import_subfolders_as_list(enemy_path)
+
+        # foreground
+        self.assets["foreground"] = {}
+        for main_type, subtypes in FOREGROUND_TYPES.items():
+            foreground_type = main_type.replace(" ", "_")
+            foreground_path = path.join("..", "graphics", foreground_type)
+            if len(subtypes) > 0:
+                self.assets["foreground"][foreground_type] = {}
+                for subtype in subtypes:
+                    subtype_path = path.join(foreground_path, subtype)
+                    self.assets["foreground"][foreground_type][subtype] = (
+                        import_subfolders_as_list(subtype_path)
+                    )
+            else:
+                self.assets["foreground"][foreground_type] = import_subfolders_as_list(
+                    foreground_path
+                )
+
+        # background
+        self.assets["background"] = {}
+        for main_type, subtypes in BACKGROUND_TYPES.items():
+            background_type = main_type.replace(" ", "_")
+            background_path = path.join("..", "graphics", background_type)
+            if len(subtypes) > 0:
+                self.assets["background"][background_type] = {}
+                for subtype in subtypes:
+                    subtype_path = path.join(background_path, subtype)
+                    self.assets["background"][background_type][subtype] = (
+                        import_subfolders_as_list(subtype_path)
+                    )
+            else:
+                self.assets["background"][background_type] = import_subfolders_as_list(
+                    background_path
+                )
 
     def toggle_editor(self):
         self.editor_active = not self.editor_active

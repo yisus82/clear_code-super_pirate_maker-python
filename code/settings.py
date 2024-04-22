@@ -16,7 +16,7 @@ SEA_COLOR = "#92a9ce"
 SKY_COLOR = "#ddc6a1"
 
 # editor items
-TERRAIN_DATA = {
+TERRAIN_TYPES = {
     "land": {
         "animated": False,
     },
@@ -27,6 +27,12 @@ TERRAIN_DATA = {
 COIN_TYPES = ["gold", "silver", "diamond"]
 ENEMY_TYPES = ["spikes", "tooth", "shell left", "shell right"]
 PALM_TYPES = ["small", "large", "left", "right"]
+FOREGROUND_TYPES = {
+    "palm fg": PALM_TYPES,
+}
+BACKGROUND_TYPES = {
+    "palm bg": PALM_TYPES,
+}
 NEIGHBOR_DIRECTIONS = {
     "A": (0, -1),
     "B": (1, -1),

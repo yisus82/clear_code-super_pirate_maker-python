@@ -5,7 +5,7 @@ import pygame_gui
 from enemy import Enemy
 from player import Player
 from settings import SKY_COLOR
-from sprites import Animated, Coin, Generic
+from sprites import AnimatedObject, Coin, Generic, Water
 
 
 class Level:
@@ -43,7 +43,8 @@ class Level:
         if "water" in self.grid:
             for position, water_type in self.grid["water"].items():
                 if water_type == "top":
-                    Animated(
+                    Water(
+                        water_type,
                         position,
                         self.assets["water_top"],
                         [self.all_sprites, self.animated_sprites],
@@ -69,6 +70,38 @@ class Level:
                     position,
                     [self.all_sprites, self.animated_sprites],
                     self.assets["enemy"][enemy_type],
+                )
+
+        # foreground objects
+        if "foreground" in self.grid:
+            for position, foreground_object in self.grid["foreground"].items():
+                foreground_object_type, foreground_object_subtype = foreground_object
+                AnimatedObject(
+                    foreground_object_type,
+                    foreground_object_subtype,
+                    position,
+                    self.assets["foreground"][foreground_object_type][
+                        foreground_object_subtype
+                    ]
+                    if foreground_object_subtype
+                    else self.assets["foreground"][foreground_object_type],
+                    [self.all_sprites, self.animated_sprites],
+                )
+
+        # background objects
+        if "background" in self.grid:
+            for position, background_object in self.grid["background"].items():
+                background_object_type, background_object_subtype = background_object
+                AnimatedObject(
+                    background_object_type,
+                    background_object_subtype,
+                    position,
+                    self.assets["background"][background_object_type][
+                        background_object_subtype
+                    ]
+                    if background_object_subtype
+                    else self.assets["background"][background_object_type],
+                    [self.all_sprites, self.animated_sprites],
                 )
 
     def process_event(self, event):
