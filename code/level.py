@@ -2,7 +2,7 @@ import sys
 
 import pygame
 import pygame_gui
-from enemy import Enemy
+from enemy import Enemy, Shell, Spikes, Tooth
 from player import Player
 from settings import COLLECTABLE_TYPES, SKY_COLOR
 from sprites import AnimatedObject, Coin, Generic, Particle, Water
@@ -67,12 +67,39 @@ class Level:
         # enemies
         if "enemy" in self.grid:
             for position, enemy_type in self.grid["enemy"].items():
-                Enemy(
-                    enemy_type,
-                    position,
-                    [self.all_sprites, self.animated_sprites, self.enemy_sprites],
-                    self.assets["enemy"][enemy_type],
-                )
+                if enemy_type == "spikes":
+                    Spikes(
+                        position,
+                        [self.all_sprites, self.animated_sprites, self.enemy_sprites],
+                        self.assets["enemy"][enemy_type],
+                    )
+                elif enemy_type == "tooth":
+                    Tooth(
+                        position,
+                        [self.all_sprites, self.animated_sprites, self.enemy_sprites],
+                        self.assets["enemy"][enemy_type],
+                    )
+                elif enemy_type == "shell_left":
+                    Shell(
+                        position,
+                        [self.all_sprites, self.animated_sprites, self.enemy_sprites],
+                        self.assets["enemy"][enemy_type],
+                        "left",
+                    )
+                elif enemy_type == "shell_right":
+                    Shell(
+                        position,
+                        [self.all_sprites, self.animated_sprites, self.enemy_sprites],
+                        self.assets["enemy"][enemy_type],
+                        "right",
+                    )
+                else:
+                    Enemy(
+                        enemy_type,
+                        position,
+                        [self.all_sprites, self.animated_sprites, self.enemy_sprites],
+                        self.assets["enemy"][enemy_type],
+                    )
 
         # foreground objects
         if "foreground" in self.grid:
