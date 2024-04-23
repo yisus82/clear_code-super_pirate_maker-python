@@ -37,7 +37,11 @@ COLLECTABLE_TYPES = {
         },
     },
 }
-ENEMY_TYPES = ["spikes", "tooth", "shell left", "shell right"]
+ENEMY_TYPES = {
+    "spikes": [],
+    "tooth": [],
+    "shell": ["left", "right"],
+}
 PARTICLE_TYPES = ["coin"]
 PALM_TYPES = ["small", "large", "left", "right"]
 FOREGROUND_TYPES = {

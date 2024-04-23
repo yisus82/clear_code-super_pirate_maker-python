@@ -1,3 +1,4 @@
+import pygame
 from sprites import Animated
 
 
@@ -31,9 +32,20 @@ class Tooth(Enemy):
         position,
         groups,
         animations,
+        orientation="left",
     ):
         super().__init__("tooth", position, groups, animations)
-        self.orientation = "left"
+        self.frames = animations.copy()
+        self.orientation = orientation
+        self.set_orientation(orientation)
+
+    def set_orientation(self, orientation):
+        self.orientation = orientation
+        if self.orientation == "right":
+            for key, values in self.frames.items():
+                self.frames[key] = [
+                    pygame.transform.flip(value, True, False) for value in values
+                ]
 
 
 class Shell(Enemy):
@@ -42,7 +54,17 @@ class Shell(Enemy):
         position,
         groups,
         animations,
-        orientation,
+        orientation="left",
     ):
         super().__init__("shell", position, groups, animations)
+        self.frames = animations.copy()
         self.orientation = orientation
+        self.set_orientation(orientation)
+
+    def set_orientation(self, orientation):
+        self.orientation = orientation
+        if self.orientation == "right":
+            for key, values in self.frames.items():
+                self.frames[key] = [
+                    pygame.transform.flip(value, True, False) for value in values
+                ]

@@ -155,6 +155,18 @@ class Editor:
                 "..", "graphics", menu_section, menu_item, "idle"
             )
             self.animations[index] = import_folder(menu_item_folder)
+            if len(self.animations[index]) == 0:
+                base_item = menu_item.split("_")[0]
+                orientation = menu_item.split("_")[1]
+                menu_item_folder = path.join(
+                    "..", "graphics", menu_section, base_item, "idle"
+                )
+                self.animations[index] = import_folder(menu_item_folder)
+                if orientation == "right":
+                    for key, value in enumerate(self.animations[index]):
+                        self.animations[index][key] = pygame.transform.flip(
+                            value, True, False
+                        )
 
     def import_preview_surfaces(self):
         for index, item in enumerate(self.menu.menu_items):

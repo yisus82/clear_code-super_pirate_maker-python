@@ -83,14 +83,14 @@ class Level:
                     Shell(
                         position,
                         [self.all_sprites, self.animated_sprites, self.enemy_sprites],
-                        self.assets["enemy"][enemy_type],
+                        self.assets["enemy"]["shell"],
                         "left",
                     )
                 elif enemy_type == "shell_right":
                     Shell(
                         position,
                         [self.all_sprites, self.animated_sprites, self.enemy_sprites],
-                        self.assets["enemy"][enemy_type],
+                        self.assets["enemy"]["shell"],
                         "right",
                     )
                 else:

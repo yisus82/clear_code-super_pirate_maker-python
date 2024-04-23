@@ -40,8 +40,12 @@ class Menu:
         for value in COLLECTABLE_TYPES["coin"].keys():
             self.menu_items.append(f"coin_{value}")
         # enemies
-        for value in ENEMY_TYPES:
-            self.menu_items.append(f"enemy_{value}")
+        for enemy_type, enemy_subtypes in ENEMY_TYPES.items():
+            if len(enemy_subtypes) > 0:
+                for subtype in enemy_subtypes:
+                    self.menu_items.append(f"enemy_{enemy_type} {subtype}")
+            else:
+                self.menu_items.append(f"enemy_{enemy_type}")
         # palms foreground
         for value in PALM_TYPES:
             self.menu_items.append(f"palm fg_{value}")

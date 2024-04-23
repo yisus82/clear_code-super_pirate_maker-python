@@ -61,7 +61,7 @@ class Game:
 
         # enemy
         self.assets["enemy"] = {}
-        for value in ENEMY_TYPES:
+        for value in ENEMY_TYPES.keys():
             enemy_type = value.replace(" ", "_")
             enemy_path = path.join("..", "graphics", "enemy", enemy_type)
             self.assets["enemy"][enemy_type] = import_subfolders_as_list(enemy_path)
