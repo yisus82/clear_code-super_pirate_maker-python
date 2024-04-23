@@ -56,8 +56,8 @@ class Editor:
 
         # clouds setup
         self.current_clouds = []
-        clouds_path = path.join("..", "graphics", "clouds", "small")
-        self.cloud_surfaces = import_folder(clouds_path)
+        cloud_path = path.join("..", "graphics", "cloud", "small")
+        self.cloud_surfaces = import_folder(cloud_path)
         self.cloud_timer = pygame.event.custom_type()
         pygame.time.set_timer(self.cloud_timer, 2000)
         self.create_initial_clouds()
@@ -93,7 +93,7 @@ class Editor:
         )
 
         # sky
-        sky_handle_path = path.join("..", "graphics", "cursors", "handle.png")
+        sky_handle_path = path.join("..", "graphics", "cursor", "handle.png")
         self.sky_handle_surf = pygame.image.load(sky_handle_path).convert_alpha()
         self.sky_handle = SkyHandle(
             (self.window_width / 2, self.window_height / 2),

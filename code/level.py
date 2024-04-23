@@ -4,8 +4,8 @@ import pygame
 import pygame_gui
 from enemy import Enemy
 from player import Player
-from settings import SKY_COLOR
-from sprites import AnimatedObject, Coin, Generic, Water
+from settings import COLLECTABLE_TYPES, SKY_COLOR
+from sprites import AnimatedObject, Coin, Generic, Particle, Water
 
 
 class Level:
@@ -20,6 +20,8 @@ class Level:
         self.assets = assets
         self.all_sprites = pygame.sprite.Group()
         self.animated_sprites = pygame.sprite.Group()
+        self.collectable_sprites = pygame.sprite.Group()
+        self.enemy_sprites = pygame.sprite.Group()
         self.player = None
         self.build_level()
 
@@ -59,7 +61,7 @@ class Level:
                     coin_type,
                     position,
                     self.assets["coin"][coin_type],
-                    [self.all_sprites, self.animated_sprites],
+                    [self.all_sprites, self.animated_sprites, self.collectable_sprites],
                 )
 
         # enemies
@@ -68,7 +70,7 @@ class Level:
                 Enemy(
                     enemy_type,
                     position,
-                    [self.all_sprites, self.animated_sprites],
+                    [self.all_sprites, self.animated_sprites, self.enemy_sprites],
                     self.assets["enemy"][enemy_type],
                 )
 
@@ -141,8 +143,24 @@ class Level:
             "switch_mode",
         )
 
+    def get_collectables(self):
+        collided_collectables = pygame.sprite.spritecollide(
+            self.player, self.collectable_sprites, True
+        )
+        for sprite in collided_collectables:
+            if isinstance(sprite, Coin):
+                Particle(
+                    sprite.rect.center,
+                    self.assets["particle"]["coin"],
+                    [self.all_sprites, self.animated_sprites],
+                    500,
+                )
+                coin_value = COLLECTABLE_TYPES["coin"][sprite.coin_type]["value"]
+                print(f"Player collected a {sprite.coin_type} coin worth {coin_value}.")
+
     def update(self, dt):
         self.display_surface.fill(SKY_COLOR)
+        self.get_collectables()
         self.animated_sprites.update(dt)
         self.all_sprites.draw(self.display_surface)
         self.ui_manager.display()

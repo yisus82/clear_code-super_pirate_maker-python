@@ -3,7 +3,14 @@ from os import path
 import pygame
 from editor import Editor
 from level import Level
-from settings import BACKGROUND_TYPES, COIN_TYPES, ENEMY_TYPES, FOREGROUND_TYPES, FPS
+from settings import (
+    BACKGROUND_TYPES,
+    COLLECTABLE_TYPES,
+    ENEMY_TYPES,
+    FOREGROUND_TYPES,
+    FPS,
+    PARTICLE_TYPES,
+)
 from transition import Transition
 from ui_manager import UIManager
 from utils import import_folder_as_dict, import_subfolders_as_list
@@ -22,7 +29,7 @@ class Game:
         self.ui_manager = UIManager()
         self.editor = Editor(self.ui_manager, self.assets["land"], self.switch_mode)
         self.level = None
-        mouse_path = path.join("..", "graphics", "cursors", "mouse.png")
+        mouse_path = path.join("..", "graphics", "cursor", "mouse.png")
         mouse_surface = pygame.image.load(mouse_path).convert_alpha()
         self.mouse_cursor = pygame.cursors.Cursor((0, 0), mouse_surface)
 
@@ -47,7 +54,7 @@ class Game:
 
         # coin
         self.assets["coin"] = {}
-        for value in COIN_TYPES:
+        for value in COLLECTABLE_TYPES["coin"].keys():
             coin_type = value.replace(" ", "_")
             coin_path = path.join("..", "graphics", "coin", coin_type)
             self.assets["coin"][coin_type] = import_subfolders_as_list(coin_path)
@@ -92,6 +99,15 @@ class Game:
                 self.assets["background"][background_type] = import_subfolders_as_list(
                     background_path
                 )
+
+        # particles
+        self.assets["particle"] = {}
+        for value in PARTICLE_TYPES:
+            particle_type = value.replace(" ", "_")
+            particle_path = path.join("..", "graphics", "particle", particle_type)
+            self.assets["particle"][particle_type] = import_subfolders_as_list(
+                particle_path
+            )
 
     def toggle_editor(self):
         self.editor_active = not self.editor_active

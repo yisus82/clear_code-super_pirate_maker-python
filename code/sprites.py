@@ -1,5 +1,6 @@
 import pygame
 from settings import ANIMATION_SPEED, TILE_SIZE
+from timer import Timer
 
 
 class Generic(pygame.sprite.Sprite):
@@ -56,8 +57,30 @@ class Animated(Generic):
 
 class Coin(Animated):
     def __init__(self, coin_type, position, frames, groups):
-        super().__init__(position, frames, groups, pivot="center")
+        super().__init__(position, frames, groups)
         self.coin_type = coin_type
+
+
+class Particle(Animated):
+    def __init__(
+        self,
+        position,
+        frames={"idle": [pygame.Surface((TILE_SIZE, TILE_SIZE))]},
+        groups=[],
+        ttl=None,
+    ):
+        super().__init__(position, frames, groups)
+        if ttl:
+            self.timer = Timer(ttl, self.kill)
+            self.timer.activate()
+
+    def update_timer(self):
+        if self.timer:
+            self.timer.update()
+
+    def update(self, dt):
+        self.update_timer()
+        super().update(dt)
 
 
 class Water(Animated):

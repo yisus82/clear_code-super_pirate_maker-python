@@ -24,8 +24,21 @@ TERRAIN_TYPES = {
         "animated": True,
     },
 }
-COIN_TYPES = ["gold", "silver", "diamond"]
+COLLECTABLE_TYPES = {
+    "coin": {
+        "gold": {
+            "value": 5,
+        },
+        "silver": {
+            "value": 1,
+        },
+        "diamond": {
+            "value": 10,
+        },
+    },
+}
 ENEMY_TYPES = ["spikes", "tooth", "shell left", "shell right"]
+PARTICLE_TYPES = ["coin"]
 PALM_TYPES = ["small", "large", "left", "right"]
 FOREGROUND_TYPES = {
     "palm fg": PALM_TYPES,

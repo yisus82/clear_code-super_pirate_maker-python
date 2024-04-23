@@ -4,7 +4,7 @@ import pygame
 from button import Button
 from settings import (
     BUTTON_LINE_COLOR,
-    COIN_TYPES,
+    COLLECTABLE_TYPES,
     ENEMY_TYPES,
     MENU_BUTTON_MARGIN,
     MENU_MARGIN,
@@ -37,7 +37,7 @@ class Menu:
         for key in TERRAIN_TYPES.keys():
             self.menu_items.append(f"terrain_{key}")
         # coins
-        for value in COIN_TYPES:
+        for value in COLLECTABLE_TYPES["coin"].keys():
             self.menu_items.append(f"coin_{value}")
         # enemies
         for value in ENEMY_TYPES:
