@@ -16,6 +16,7 @@ class Level:
         self.ui_manager = ui_manager
         self.grid = grid
         self.switch_mode = switch_mode
+        self.paused = False
 
         # assets setup
         self.assets = assets
@@ -196,6 +197,10 @@ class Level:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
             self.confirm_switch_mode()
 
+        # pause the game
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+            self.paused = not self.paused
+
     def confirm_exit(self):
         self.ui_manager.show_confirmation_dialog(
             "Exit",
@@ -229,7 +234,13 @@ class Level:
 
     def update(self, dt):
         self.display_surface.fill(SKY_COLOR)
-        self.get_collectables()
-        self.animated_sprites.update(dt)
+        if not self.paused:
+            self.get_collectables()
+            self.animated_sprites.update(dt)
         self.all_sprites.custom_draw(self.player)
         self.ui_manager.display()
+        if self.paused:
+            dark_surface = pygame.Surface(self.display_surface.get_size())
+            dark_surface.set_alpha(128)
+            dark_surface.fill((0, 0, 0))
+            self.display_surface.blit(dark_surface, (0, 0))

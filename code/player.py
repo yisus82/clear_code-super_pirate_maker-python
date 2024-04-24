@@ -23,12 +23,16 @@ class Player(Animated):
 
     def input(self):
         keys = pygame.key.get_pressed()
+
+        # movement
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
             self.direction.x = 1
         elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
             self.direction.x = -1
         else:
             self.direction.x = 0
+
+        # jump
         if keys[pygame.K_SPACE] and self.on_floor:
             self.direction.y = JUMP_FORCE
             self.on_floor = False
@@ -139,8 +143,9 @@ class Player(Animated):
                 self.direction.y = 0
 
     def update(self, dt):
-        self.apply_gravity(dt)
         self.check_on_floor()
+        if not self.on_floor:
+            self.apply_gravity(dt)
         self.input()
         self.update_orientation()
         self.move(dt)
