@@ -139,9 +139,8 @@ class Player(Animated):
                 self.direction.y = 0
 
     def update(self, dt):
+        self.apply_gravity(dt)
         self.check_on_floor()
-        if not self.on_floor:
-            self.apply_gravity(dt)
         self.input()
         self.update_orientation()
         self.move(dt)
