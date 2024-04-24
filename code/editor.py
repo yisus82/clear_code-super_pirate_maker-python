@@ -181,7 +181,8 @@ class Editor:
     def create_grid(self):
         # clear the objects from the tiles
         for tile in self.canvas_data.values():
-            tile.objects = []
+            tile.foreground_objects = []
+            tile.background_objects = []
 
         # add objects to the tiles
         for obj in self.canvas_objects:
