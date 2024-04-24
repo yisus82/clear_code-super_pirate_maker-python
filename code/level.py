@@ -225,5 +225,3 @@ class Level:
         self.animated_sprites.update(dt)
         self.all_sprites.draw(self.display_surface)
         self.ui_manager.display()
-        for sprite in self.collision_sprites:
-            sprite.draw_hitbox(self.display_surface)
