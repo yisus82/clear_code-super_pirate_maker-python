@@ -13,7 +13,7 @@ class Player(Animated):
     def __init__(
         self, position, animations, groups, collision_sprites, status="idle_right"
     ):
-        super().__init__(position, animations, groups, status, pivot="bottomleft")
+        super().__init__(position, animations, groups, status, "bottomleft", "player")
         self.collision_sprites = collision_sprites
         self.speed = PLAYER_SPEED
         self.on_floor = False

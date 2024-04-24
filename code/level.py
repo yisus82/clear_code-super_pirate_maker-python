@@ -2,6 +2,7 @@ import sys
 
 import pygame
 import pygame_gui
+from camera_group import CameraGroup
 from enemy import Enemy, Shell, Spikes, Tooth
 from player import Player
 from settings import COLLECTABLE_TYPES, FOREGROUND_TYPES, SKY_COLOR
@@ -18,7 +19,7 @@ class Level:
 
         # assets setup
         self.assets = assets
-        self.all_sprites = pygame.sprite.Group()
+        self.all_sprites = CameraGroup()
         self.animated_sprites = pygame.sprite.Group()
         self.collectable_sprites = pygame.sprite.Group()
         self.enemy_sprites = pygame.sprite.Group()
@@ -54,7 +55,12 @@ class Level:
                         [self.all_sprites, self.animated_sprites],
                     )
                 elif water_type == "bottom":
-                    Generic(position, self.assets["water_bottom"], [self.all_sprites])
+                    Generic(
+                        position,
+                        self.assets["water_bottom"],
+                        [self.all_sprites],
+                        sorting_layer="water",
+                    )
 
         # coins
         if "coin" in self.grid:
@@ -165,6 +171,8 @@ class Level:
                     if background_object_subtype
                     else self.assets["background"][background_object_type],
                     [self.all_sprites, self.animated_sprites],
+                    background=True,
+                    sorting_layer="background",
                 )
 
     def process_event(self, event):
@@ -223,5 +231,5 @@ class Level:
         self.display_surface.fill(SKY_COLOR)
         self.get_collectables()
         self.animated_sprites.update(dt)
-        self.all_sprites.draw(self.display_surface)
+        self.all_sprites.custom_draw(self.player)
         self.ui_manager.display()

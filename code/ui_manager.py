@@ -6,9 +6,9 @@ from pygame_gui.windows import UIConfirmationDialog, UIFileDialog, UIMessageWind
 class UIManager:
     def __init__(self):
         self.display_surface = pygame.display.get_surface()
-        self.window_width = self.display_surface.get_width()
-        self.window_height = self.display_surface.get_height()
-        self.gui_manager = pygame_gui.UIManager((self.window_width, self.window_height))
+        window_width = self.display_surface.get_width()
+        window_height = self.display_surface.get_height()
+        self.gui_manager = pygame_gui.UIManager((window_width, window_height))
         self.gui_manager.preload_fonts(
             [
                 {
@@ -30,10 +30,10 @@ class UIManager:
         self.gui_manager.process_events(event)
 
     def prompt_file(self):
+        window_width = self.display_surface.get_width()
+        window_height = self.display_surface.get_height()
         self.opened_dialog = UIFileDialog(
-            pygame.Rect(
-                self.window_width // 2 - 200, self.window_height // 2 - 200, 400, 400
-            ),
+            pygame.Rect(window_width // 2 - 200, window_height // 2 - 200, 400, 400),
             self.gui_manager,
             window_title="Load grid...",
             initial_file_path="../levels",
@@ -43,9 +43,11 @@ class UIManager:
         )
 
     def show_information_dialog(self, title="Info", message=""):
+        window_width = self.display_surface.get_width()
+        window_height = self.display_surface.get_height()
         self.opened_dialog = UIMessageWindow(
             rect=pygame.Rect(
-                self.window_width // 2 - 200, self.window_height // 2 - 200, 400, 200
+                window_width // 2 - 200, window_height // 2 - 200, 400, 200
             ),
             manager=self.gui_manager,
             window_title=title,
@@ -60,9 +62,11 @@ class UIManager:
         object_id="confirmation_dialog",
         blocking=True,
     ):
+        window_width = self.display_surface.get_width()
+        window_height = self.display_surface.get_height()
         self.opened_dialog = UIConfirmationDialog(
             rect=pygame.Rect(
-                self.window_width // 2 - 200, self.window_height // 2 - 200, 400, 200
+                window_width // 2 - 200, window_height // 2 - 200, 400, 200
             ),
             manager=self.gui_manager,
             window_title=title,

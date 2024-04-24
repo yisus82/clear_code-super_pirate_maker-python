@@ -84,6 +84,7 @@ NEIGHBOR_DIRECTIONS = {
     "G": (-1, 0),
     "H": (-1, -1),
 }
+SORTING_LAYERS = ["clouds", "ocean", "background", "water", "main", "player"]
 
 # menu
 MENU_SIZE = 180

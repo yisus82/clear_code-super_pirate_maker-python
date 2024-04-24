@@ -70,6 +70,18 @@ class Menu:
                 ]
 
     def create_buttons(self):
+        # clear old buttons
+        self.menu_buttons.empty()
+
+        # update the menu rect
+        self.rect = pygame.Rect(
+            (
+                self.display_surface.get_width() - MENU_SIZE - MENU_MARGIN,
+                self.display_surface.get_height() - MENU_SIZE - MENU_MARGIN,
+            ),
+            (MENU_SIZE, MENU_SIZE),
+        )
+
         # button areas
         generic_button_rect = pygame.Rect(
             self.rect.topleft, (self.rect.width / 2, self.rect.height / 2)
@@ -140,6 +152,7 @@ class Menu:
                     menu_button.select_item(index)
 
     def display(self, index):
+        self.create_buttons()
         self.update_selected_item(index)
         self.menu_buttons.update()
         self.menu_buttons.draw(self.display_surface)

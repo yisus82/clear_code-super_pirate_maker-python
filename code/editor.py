@@ -33,8 +33,8 @@ class Editor:
     def __init__(self, ui_manager, land_tile_types, switch_mode):
         # main setup
         self.display_surface = pygame.display.get_surface()
-        self.window_width = self.display_surface.get_width()
-        self.window_height = self.display_surface.get_height()
+        window_width = self.display_surface.get_width()
+        window_height = self.display_surface.get_height()
         self.ui_manager = ui_manager
         self.switch_mode = switch_mode
 
@@ -70,7 +70,7 @@ class Editor:
 
         # support line setup
         self.support_line_surface = pygame.Surface(
-            (self.window_width, self.window_height), pygame.SRCALPHA
+            (window_width, window_height), pygame.SRCALPHA
         )
         self.support_line_surface.set_colorkey("green")
         self.support_line_surface.set_alpha(30)
@@ -86,7 +86,7 @@ class Editor:
         player_path = path.join("..", "graphics", "player", "idle_right")
         self.player_animations = import_folder(player_path)
         self.player = PlayerObject(
-            (200, self.window_height / 2),
+            (200, window_height / 2),
             self.player_animations,
             self.origin,
             [self.canvas_objects, self.foreground_objects],
@@ -96,7 +96,7 @@ class Editor:
         sky_handle_path = path.join("..", "graphics", "cursor", "handle.png")
         self.sky_handle_surf = pygame.image.load(sky_handle_path).convert_alpha()
         self.sky_handle = SkyHandle(
-            (self.window_width / 2, self.window_height / 2),
+            (window_width / 2, window_height / 2),
             [self.sky_handle_surf],
             self.origin,
             [self.canvas_objects, self.foreground_objects],
@@ -788,23 +788,23 @@ class Editor:
             self.display_surface.blit(surface, rect)
 
     def draw_background(self):
+        window_width = self.display_surface.get_width()
+        window_height = self.display_surface.get_height()
         horizon_y = self.sky_handle.rect.centery
         if horizon_y > 0:
             # sky and clouds
             self.display_surface.fill(SKY_COLOR)
             self.draw_clouds(horizon_y)
 
-            if horizon_y < self.window_height:
+            if horizon_y < window_height:
                 # sea and horizon line
-                sea_rect = pygame.Rect(
-                    0, horizon_y, self.window_width, self.window_height
-                )
+                sea_rect = pygame.Rect(0, horizon_y, window_width, window_height)
                 pygame.draw.rect(self.display_surface, SEA_COLOR, sea_rect)
                 pygame.draw.line(
                     self.display_surface,
                     HORIZON_COLOR,
                     (0, horizon_y),
-                    (self.window_width, horizon_y),
+                    (window_width, horizon_y),
                     3,
                 )
         else:
@@ -818,16 +818,18 @@ class Editor:
             self.display_surface.blit(cloud["surface"], (x, y))
 
     def create_cloud(self, position="right"):
+        window_width = self.display_surface.get_width()
+        window_height = self.display_surface.get_height()
         surface = choice(self.cloud_surfaces)
         if randint(0, 4) < 2:
             surface = pygame.transform.scale2x(surface)
         if position == "center":
-            x_position = randint(0, self.window_width)
+            x_position = randint(0, window_width)
         elif position == "right":
-            x_position = randint(self.window_width, self.window_width * 2)
+            x_position = randint(window_width, window_width * 2)
         else:
-            x_position = randint(-self.window_width, 0)
-        position = [x_position, randint(0, self.window_height)]
+            x_position = randint(-window_width, 0)
+        position = [x_position, randint(0, window_height)]
         return {"surface": surface, "position": position, "speed": randint(20, 50)}
 
     def create_clouds(self, event):
@@ -843,6 +845,7 @@ class Editor:
             self.current_clouds.append(self.create_cloud("right"))
 
     def update_clouds(self, dt):
+        window_width = self.display_surface.get_width()
         # move clouds
         for cloud in self.current_clouds:
             cloud["position"][0] -= cloud["speed"] * dt
@@ -851,14 +854,16 @@ class Editor:
         self.current_clouds = [
             cloud
             for cloud in self.current_clouds
-            if cloud["position"][0] > -self.window_width
+            if cloud["position"][0] > -window_width
         ]
 
     def draw_world_limits(self):
-        x_min = -self.window_width + self.origin.x
-        x_max = 2 * self.window_width + self.origin.x
-        y_min = -self.window_height + self.origin.y
-        y_max = 2 * self.window_height + self.origin.y
+        window_width = self.display_surface.get_width()
+        window_height = self.display_surface.get_height()
+        x_min = -window_width + self.origin.x
+        x_max = 2 * window_width + self.origin.x
+        y_min = -window_height + self.origin.y
+        y_max = 2 * window_height + self.origin.y
         rect = pygame.Rect(x_min, y_min, x_max - x_min, y_max - y_min)
         pygame.draw.rect(self.display_surface, "red", rect, 3)
 

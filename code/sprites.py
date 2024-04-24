@@ -4,12 +4,13 @@ from timer import Timer
 
 
 class Generic(pygame.sprite.Sprite):
-    def __init__(self, position, surface, groups):
+    def __init__(self, position, surface, groups, sorting_layer="main"):
         super().__init__(groups)
         self.position = position
         self.image = surface
         self.rect = self.image.get_rect(topleft=self.position)
         self.hitbox = self.rect
+        self.sorting_layer = sorting_layer
 
     def draw_hitbox(self, surface):
         pygame.draw.rect(surface, "red", self.hitbox, 2)
@@ -28,8 +29,9 @@ class Animated(Generic):
         groups=[],
         status="idle",
         pivot="center",
+        sorting_layer="main",
     ):
-        super().__init__(position, frames[status][0], groups)
+        super().__init__(position, frames[status][0], groups, sorting_layer)
         self.status = status
         self.frames = frames
         self.frame_index = 0
@@ -90,7 +92,9 @@ class Particle(Animated):
 
 class Water(Animated):
     def __init__(self, water_type, position, frames, groups):
-        super().__init__(position, frames, groups, pivot="topleft")
+        super().__init__(
+            position, frames, groups, pivot="topleft", sorting_layer="water"
+        )
         self.water_type = water_type
 
 
@@ -105,8 +109,9 @@ class AnimatedObject(Animated):
         status="idle",
         background=False,
         pivot="topleft",
+        sorting_layer="main",
     ):
-        super().__init__(position, frames, groups, status, pivot)
+        super().__init__(position, frames, groups, status, pivot, sorting_layer)
         self.object_type = object_type
         self.object_subtype = object_subtype
         self.background = background
