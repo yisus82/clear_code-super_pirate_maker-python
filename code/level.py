@@ -4,8 +4,8 @@ import pygame
 import pygame_gui
 from enemy import Enemy, Shell, Spikes, Tooth
 from player import Player
-from settings import COLLECTABLE_TYPES, SKY_COLOR
-from sprites import AnimatedObject, Coin, Generic, Particle, Water
+from settings import COLLECTABLE_TYPES, FOREGROUND_TYPES, SKY_COLOR
+from sprites import AnimatedObject, Coin, Generic, Mask, Particle, Water
 
 
 class Level:
@@ -22,6 +22,7 @@ class Level:
         self.animated_sprites = pygame.sprite.Group()
         self.collectable_sprites = pygame.sprite.Group()
         self.enemy_sprites = pygame.sprite.Group()
+        self.collision_sprites = pygame.sprite.Group()
         self.player = None
         self.build_level()
 
@@ -30,8 +31,9 @@ class Level:
         position, status = list(self.grid["player"].items())[0]
         self.player = Player(
             position,
-            [self.all_sprites, self.animated_sprites],
             self.assets["player"],
+            [self.all_sprites, self.animated_sprites, self.collision_sprites],
+            self.collision_sprites,
             status,
         )
 
@@ -39,7 +41,7 @@ class Level:
         if "land" in self.grid:
             for position, land_tile_type in self.grid["land"].items():
                 surface = self.assets["land"][land_tile_type]
-                Generic(position, surface, [self.all_sprites])
+                Generic(position, surface, [self.all_sprites, self.collision_sprites])
 
         # water
         if "water" in self.grid:
@@ -82,14 +84,24 @@ class Level:
                 elif enemy_type == "shell_left":
                     Shell(
                         position,
-                        [self.all_sprites, self.animated_sprites, self.enemy_sprites],
+                        [
+                            self.all_sprites,
+                            self.animated_sprites,
+                            self.enemy_sprites,
+                            self.collision_sprites,
+                        ],
                         self.assets["enemy"]["shell"],
                         "left",
                     )
                 elif enemy_type == "shell_right":
                     Shell(
                         position,
-                        [self.all_sprites, self.animated_sprites, self.enemy_sprites],
+                        [
+                            self.all_sprites,
+                            self.animated_sprites,
+                            self.enemy_sprites,
+                            self.collision_sprites,
+                        ],
                         self.assets["enemy"]["shell"],
                         "right",
                     )
@@ -116,6 +128,28 @@ class Level:
                     else self.assets["foreground"][foreground_object_type],
                     [self.all_sprites, self.animated_sprites],
                 )
+                object_type = foreground_object_type.replace("_", " ")
+                object_subtype = foreground_object_subtype.replace("_", " ")
+                if FOREGROUND_TYPES[object_type]["types"]:
+                    mask_offset = FOREGROUND_TYPES[object_type]["types"][
+                        object_subtype
+                    ]["mask_offset"]
+                    mask_size = FOREGROUND_TYPES[object_type]["types"][object_subtype][
+                        "mask_size"
+                    ]
+                    Mask(
+                        position + pygame.Vector2(mask_offset),
+                        mask_size,
+                        [self.collision_sprites],
+                    )
+                else:
+                    mask_offset = FOREGROUND_TYPES[object_type]["mask_offset"]
+                    mask_size = FOREGROUND_TYPES[object_type]["mask_size"]
+                    Mask(
+                        position + pygame.Vector2(mask_offset),
+                        mask_size,
+                        [self.collision_sprites],
+                    )
 
         # background objects
         if "background" in self.grid:
@@ -191,3 +225,5 @@ class Level:
         self.animated_sprites.update(dt)
         self.all_sprites.draw(self.display_surface)
         self.ui_manager.display()
+        for sprite in self.collision_sprites:
+            sprite.draw_hitbox(self.display_surface)

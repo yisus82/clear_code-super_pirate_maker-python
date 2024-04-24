@@ -2,6 +2,10 @@
 FPS = 60
 TILE_SIZE = 64
 ANIMATION_SPEED = 8
+PLAYER_SPEED = 300
+GRAVITY = 4
+JUMP_FORCE = -2
+PLAYER_HITBOX_OFFSET = (-50, 0)
 INITIAL_CLOUDS_CENTER = 20
 INITIAL_CLOUDS_RIGHT = 10
 INITIAL_CLOUDS_LEFT = 50
@@ -45,7 +49,26 @@ ENEMY_TYPES = {
 PARTICLE_TYPES = ["coin"]
 PALM_TYPES = ["small", "large", "left", "right"]
 FOREGROUND_TYPES = {
-    "palm fg": PALM_TYPES,
+    "palm fg": {
+        "types": {
+            "small": {
+                "mask_offset": (0, 0),
+                "mask_size": (75, 50),
+            },
+            "large": {
+                "mask_offset": (0, 0),
+                "mask_size": (75, 50),
+            },
+            "left": {
+                "mask_offset": (0, 0),
+                "mask_size": (75, 50),
+            },
+            "right": {
+                "mask_offset": (50, 0),
+                "mask_size": (75, 50),
+            },
+        },
+    },
 }
 BACKGROUND_TYPES = {
     "palm bg": PALM_TYPES,

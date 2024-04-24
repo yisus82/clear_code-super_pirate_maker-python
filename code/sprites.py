@@ -6,9 +6,18 @@ from timer import Timer
 class Generic(pygame.sprite.Sprite):
     def __init__(self, position, surface, groups):
         super().__init__(groups)
-        self.image = surface
-        self.rect = self.image.get_rect(topleft=position)
         self.position = position
+        self.image = surface
+        self.rect = self.image.get_rect(topleft=self.position)
+        self.hitbox = self.rect
+
+    def draw_hitbox(self, surface):
+        pygame.draw.rect(surface, "red", self.hitbox, 2)
+
+
+class Mask(Generic):
+    def __init__(self, position, size=(TILE_SIZE, TILE_SIZE), groups=[]):
+        super().__init__(position, pygame.Surface(size), groups)
 
 
 class Animated(Generic):
@@ -38,18 +47,14 @@ class Animated(Generic):
             self.rect = self.image.get_rect(bottomleft=self.position)
         else:
             self.rect = self.image.get_rect(topleft=self.position)
+        self.hitbox = self.rect
 
     def animate(self, dt):
         self.frame_index += self.animation_speed * dt
         if self.frame_index >= len(self.frames[self.status]):
             self.frame_index = 0
         self.image = self.frames[self.status][int(self.frame_index)]
-        if self.pivot == "center":
-            self.rect = self.image.get_rect(center=self.position)
-        elif self.pivot == "bottomleft":
-            self.rect = self.image.get_rect(bottomleft=self.position)
-        else:
-            self.rect = self.image.get_rect(topleft=self.position)
+        self.rect = self.image.get_rect(center=self.hitbox.center)
 
     def update(self, dt):
         self.animate(dt)

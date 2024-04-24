@@ -68,11 +68,12 @@ class Game:
 
         # foreground
         self.assets["foreground"] = {}
-        for main_type, subtypes in FOREGROUND_TYPES.items():
+        for main_type, values in FOREGROUND_TYPES.items():
             foreground_type = main_type.replace(" ", "_")
             foreground_path = path.join("..", "graphics", foreground_type)
-            if len(subtypes) > 0:
+            if values["types"]:
                 self.assets["foreground"][foreground_type] = {}
+                subtypes = values["types"].keys()
                 for subtype in subtypes:
                     subtype_path = path.join(foreground_path, subtype)
                     self.assets["foreground"][foreground_type][subtype] = (
