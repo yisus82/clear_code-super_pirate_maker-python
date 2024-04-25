@@ -35,7 +35,7 @@ class Level:
         self.player = Player(
             position,
             self.assets["player"],
-            [self.all_sprites, self.animated_sprites, self.collision_sprites],
+            [self.all_sprites, self.animated_sprites],
             self.collision_sprites,
             status,
         )
@@ -98,6 +98,7 @@ class Level:
                             self.damage_sprites,
                         ],
                         self.assets["enemy"][enemy_type],
+                        collision_sprites=self.collision_sprites,
                     )
                 elif enemy_type == "shell_left":
                     Shell(

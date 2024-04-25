@@ -1,4 +1,5 @@
 import pygame
+from settings import COLLISION_OFFSET
 from sprites import Animated
 from timer import Timer
 
@@ -34,19 +35,113 @@ class Tooth(Enemy):
         groups,
         animations,
         orientation="left",
+        collision_sprites=[],
     ):
         super().__init__("tooth", position, groups, animations)
-        self.frames = animations.copy()
+        self.left_frames = animations.copy()
+        self.right_frames = self.flip_frames(animations)
         self.orientation = orientation
         self.set_orientation(orientation)
+        self.direction = (
+            pygame.Vector2(1, 0) if orientation == "right" else pygame.Vector2(-1, 0)
+        )
+        self.collision_sprites = collision_sprites
+        self.speed = 120
+        self.idle_timer = Timer(2000)
+        self.idle_timer.activate()
+
+    def update_status(self):
+        self.status = "idle" if self.idle_timer.active else "run"
+
+    def flip_frames(self, frames):
+        return {
+            key: [pygame.transform.flip(value, True, False) for value in values]
+            for key, values in frames.copy().items()
+        }
+
+    def update_orientation(self):
+        if self.direction.x == 1:
+            self.set_orientation("right")
+        elif self.direction.x == -1:
+            self.set_orientation("left")
 
     def set_orientation(self, orientation):
         self.orientation = orientation
         if self.orientation == "right":
-            for key, values in self.frames.items():
-                self.frames[key] = [
-                    pygame.transform.flip(value, True, False) for value in values
-                ]
+            self.frames = self.right_frames
+        else:
+            self.frames = self.left_frames
+
+    def sprite_left_collide(self):
+        left_rect = pygame.Rect(
+            self.hitbox.topleft, (COLLISION_OFFSET, self.hitbox.height)
+        )
+        for sprite in self.collision_sprites:
+            sprite_rect = pygame.Rect(
+                sprite.hitbox.topright, (COLLISION_OFFSET, sprite.hitbox.height)
+            )
+            if sprite_rect.colliderect(left_rect):
+                return sprite
+        return None
+
+    def sprite_right_collide(self):
+        right_rect = pygame.Rect(
+            self.hitbox.topright, (COLLISION_OFFSET, self.hitbox.height)
+        )
+        for sprite in self.collision_sprites:
+            sprite_rect = pygame.Rect(
+                sprite.hitbox.topleft, (COLLISION_OFFSET, sprite.hitbox.height)
+            )
+            if sprite_rect.colliderect(right_rect):
+                return sprite
+        return None
+
+    def sprite_down_collide(self):
+        point = (
+            self.hitbox.bottomleft
+            if self.direction.x == -1
+            else self.hitbox.bottomright
+        )
+        for sprite in self.collision_sprites:
+            if sprite.hitbox.collidepoint(point):
+                return sprite
+        return None
+
+    def horizontal_collide(self):
+        if self.direction.x > 0:
+            if self.sprite_right_collide():
+                self.idle_timer.activate()
+        elif self.direction.x < 0:
+            if self.sprite_left_collide():
+                self.idle_timer.activate()
+
+    def check_on_floor(self):
+        return self.sprite_down_collide() is not None
+
+    def move(self, dt):
+        self.hitbox.move_ip(self.direction.x * self.speed * dt, 0)
+        self.horizontal_collide()
+        if self.sprite_down_collide() is None:
+            self.hitbox.move_ip(-self.direction.x * self.speed * dt, 0)
+            self.idle_timer.activate()
+
+    def resume_move(self):
+        self.direction.x *= -1
+        self.set_orientation("right" if self.direction.x == 1 else "left")
+
+    def update(self, dt):
+        if not self.check_on_floor():
+            self.kill()
+        self.update_orientation()
+        if self.idle_timer.active:
+            self.idle_timer.update()
+            if not self.idle_timer.active:
+                self.resume_move()
+        else:
+            self.move(dt)
+        self.update_status()
+        super().update(dt)
+        self.rect = self.image.get_rect(bottomleft=self.hitbox.bottomleft)
 
 
 class Shell(Enemy):
