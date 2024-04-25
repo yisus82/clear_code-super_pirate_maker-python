@@ -25,6 +25,7 @@ class Level:
         self.collectable_sprites = pygame.sprite.Group()
         self.enemy_sprites = pygame.sprite.Group()
         self.collision_sprites = pygame.sprite.Group()
+        self.damage_sprites = pygame.sprite.Group()
         self.player = None
         self.build_level()
 
@@ -79,13 +80,23 @@ class Level:
                 if enemy_type == "spikes":
                     Spikes(
                         position,
-                        [self.all_sprites, self.animated_sprites, self.enemy_sprites],
+                        [
+                            self.all_sprites,
+                            self.animated_sprites,
+                            self.enemy_sprites,
+                            self.damage_sprites,
+                        ],
                         self.assets["enemy"][enemy_type],
                     )
                 elif enemy_type == "tooth":
                     Tooth(
                         position,
-                        [self.all_sprites, self.animated_sprites, self.enemy_sprites],
+                        [
+                            self.all_sprites,
+                            self.animated_sprites,
+                            self.enemy_sprites,
+                            self.damage_sprites,
+                        ],
                         self.assets["enemy"][enemy_type],
                     )
                 elif enemy_type == "shell_left":
@@ -98,6 +109,14 @@ class Level:
                             self.collision_sprites,
                         ],
                         self.assets["enemy"]["shell"],
+                        self.assets["pearl"],
+                        [
+                            self.all_sprites,
+                            self.animated_sprites,
+                            self.enemy_sprites,
+                            self.damage_sprites,
+                        ],
+                        self.player,
                         "left",
                     )
                 elif enemy_type == "shell_right":
@@ -110,6 +129,14 @@ class Level:
                             self.collision_sprites,
                         ],
                         self.assets["enemy"]["shell"],
+                        self.assets["pearl"],
+                        [
+                            self.all_sprites,
+                            self.animated_sprites,
+                            self.enemy_sprites,
+                            self.damage_sprites,
+                        ],
+                        self.player,
                         "right",
                     )
                 else:

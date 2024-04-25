@@ -110,6 +110,10 @@ class Game:
                 particle_path
             )
 
+        # pearl
+        pearl_path = path.join("..", "graphics", "pearl", "pearl.png")
+        self.assets["pearl"] = pygame.image.load(pearl_path).convert_alpha()
+
     def toggle_editor(self):
         self.editor_active = not self.editor_active
 
