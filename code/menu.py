@@ -31,6 +31,7 @@ class Menu:
         self.menu_buttons = pygame.sprite.Group()
         self.menu_buttons_rects = {}
         self.create_buttons()
+        self.selected_index = 0
 
     def load_menu_items(self):
         # terrain
@@ -121,6 +122,7 @@ class Menu:
                 if mouse_button[2]:
                     menu_button.switch_item()
                 return menu_button.get_menu_item_index()
+        return self.selected_index
 
     def get_menu_item(self, index):
         item = self.menu_items[index]
@@ -152,6 +154,7 @@ class Menu:
                     menu_button.select_item(index)
 
     def display(self, index):
+        self.selected_index = index
         self.create_buttons()
         self.update_selected_item(index)
         self.menu_buttons.update()
