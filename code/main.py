@@ -13,7 +13,7 @@ from settings import (
 )
 from transition import Transition
 from ui_manager import UIManager
-from utils import import_folder_as_dict, import_subfolders_as_list
+from utils import import_folder, import_folder_as_dict, import_subfolders_as_list
 
 
 class Game:
@@ -114,6 +114,10 @@ class Game:
         # pearl
         pearl_path = path.join("..", "graphics", "pearl", "pearl.png")
         self.assets["pearl"] = pygame.image.load(pearl_path).convert_alpha()
+
+        # clouds
+        clouds_path = path.join("..", "graphics", "cloud", "small")
+        self.assets["cloud"] = import_folder(clouds_path)
 
     def toggle_editor(self):
         self.editor_active = not self.editor_active

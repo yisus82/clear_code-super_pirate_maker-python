@@ -13,11 +13,13 @@ COLLISION_OFFSET = 10
 INITIAL_CLOUDS_CENTER = 20
 INITIAL_CLOUDS_RIGHT = 10
 INITIAL_CLOUDS_LEFT = 50
+INITIAL_CLOUDS_LEVEL = 40
 
 # colors
 BUTTON_BG_COLOR = "#33323d"
 BUTTON_LINE_COLOR = "gold"
 HORIZON_COLOR = "#f5f1de"
+HORIZON_TOP_COLOR = "#d1aa9d"
 HOVER_COLOR = "black"
 LINE_COLOR = "black"
 SEA_COLOR = "#92a9ce"
@@ -87,7 +89,7 @@ NEIGHBOR_DIRECTIONS = {
     "G": (-1, 0),
     "H": (-1, -1),
 }
-SORTING_LAYERS = ["clouds", "ocean", "background", "water", "main", "player"]
+SORTING_LAYERS = ["cloud", "background", "water", "main", "player"]
 
 # menu
 MENU_SIZE = 180

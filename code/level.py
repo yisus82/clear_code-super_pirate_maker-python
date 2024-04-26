@@ -1,12 +1,18 @@
 import sys
+from random import choice, randint
 
 import pygame
 import pygame_gui
 from camera_group import CameraGroup
 from enemy import Enemy, Shell, Spikes, Tooth
 from player import Player
-from settings import COLLECTABLE_TYPES, FOREGROUND_TYPES, SKY_COLOR
-from sprites import AnimatedObject, Coin, Generic, Mask, Particle, Water
+from settings import (
+    COLLECTABLE_TYPES,
+    FOREGROUND_TYPES,
+    INITIAL_CLOUDS_LEVEL,
+    SKY_COLOR,
+)
+from sprites import AnimatedObject, Cloud, Coin, Generic, Mask, Particle, Water
 
 
 class Level:
@@ -29,7 +35,14 @@ class Level:
         self.collision_sprites = pygame.sprite.Group()
         self.damage_sprites = pygame.sprite.Group()
         self.player = None
+        self.horizon_y = self.display_surface.get_height() // 2
         self.build_level()
+        self.right_edge = sorted(
+            list(self.grid["land"].keys()), key=lambda pos: pos[0]
+        )[-1][0]
+        self.cloud_timer = pygame.event.custom_type()
+        pygame.time.set_timer(self.cloud_timer, 2000)
+        self.create_initial_clouds()
 
     def build_level(self):
         # player
@@ -41,6 +54,9 @@ class Level:
             self.collision_sprites,
             status,
         )
+
+        # horizon
+        self.horizon_y = list(self.grid["sky_handle"].keys())[0][1]
 
         # land
         if "land" in self.grid:
@@ -233,6 +249,10 @@ class Level:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
             self.paused = not self.paused
 
+        # create a cloud
+        if event.type == self.cloud_timer:
+            self.create_cloud()
+
     def confirm_exit(self):
         self.ui_manager.show_confirmation_dialog(
             "Exit",
@@ -294,13 +314,37 @@ class Level:
                 self.paused = True
                 self.confirm_game_over()
 
+    def create_cloud(self, offscreen=True):
+        left_limit = -self.display_surface.get_width()
+        right_limit = self.right_edge + 500
+        surface = choice(self.assets["cloud"])
+        if randint(0, 5) > 3:
+            surface = pygame.transform.scale2x(surface)
+        x = (
+            right_limit + randint(100, 300)
+            if offscreen
+            else randint(left_limit, right_limit)
+        )
+        y = self.horizon_y - randint(100, 600)
+        Cloud(
+            (x, y),
+            surface,
+            [self.all_sprites, self.animated_sprites],
+            left_limit,
+            randint(75, 125),
+        )
+
+    def create_initial_clouds(self):
+        for _ in range(INITIAL_CLOUDS_LEVEL):
+            self.create_cloud(offscreen=False)
+
     def update(self, dt):
         self.display_surface.fill(SKY_COLOR)
         if not self.paused:
             self.get_collectables()
             self.check_damage()
             self.animated_sprites.update(dt)
-        self.all_sprites.custom_draw(self.player)
+        self.all_sprites.custom_draw(self.player, self.horizon_y)
         if self.debug:
             for sprite in self.collision_sprites:
                 sprite.draw_hitbox(self.display_surface, self.player)

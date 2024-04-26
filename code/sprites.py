@@ -77,6 +77,24 @@ class Animated(Generic):
         self.animate(dt)
 
 
+class Cloud(Animated):
+    def __init__(self, position, surface, groups, left_limit, speed):
+        super().__init__(position, {"idle": [surface]}, groups, sorting_layer="cloud")
+        self.left_limit = left_limit
+        self.speed = speed
+        self.direction = pygame.Vector2(-1, 0)
+
+    def move(self, dt):
+        self.hitbox.move_ip(self.direction * self.speed * dt)
+
+    def update(self, dt):
+        self.move(dt)
+        if self.rect.x <= self.left_limit:
+            self.kill()
+        else:
+            super().update(dt)
+
+
 class Coin(Animated):
     def __init__(self, coin_type, position, frames, groups):
         super().__init__(position, frames, groups)
