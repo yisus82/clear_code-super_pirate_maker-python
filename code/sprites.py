@@ -12,8 +12,16 @@ class Generic(pygame.sprite.Sprite):
         self.hitbox = self.rect
         self.sorting_layer = sorting_layer
 
-    def draw_hitbox(self, surface):
-        pygame.draw.rect(surface, "red", self.hitbox, 2)
+    def draw_hitbox(self, surface, player):
+        window_width = surface.get_width()
+        window_height = surface.get_height()
+        offset = pygame.Vector2(
+            player.rect.centerx - window_width / 2,
+            player.rect.centery - window_height / 2,
+        )
+        offset_rect = self.hitbox.copy()
+        offset_rect.center -= offset
+        pygame.draw.rect(surface, "red", offset_rect, 2)
 
 
 class Mask(Generic):

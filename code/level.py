@@ -10,13 +10,14 @@ from sprites import AnimatedObject, Coin, Generic, Mask, Particle, Water
 
 
 class Level:
-    def __init__(self, ui_manager, grid, switch_mode, assets):
+    def __init__(self, ui_manager, grid, switch_mode, assets, debug=False):
         # main setup
         self.display_surface = pygame.display.get_surface()
         self.ui_manager = ui_manager
         self.grid = grid
         self.switch_mode = switch_mode
         self.paused = False
+        self.debug = debug
 
         # assets setup
         self.assets = assets
@@ -266,6 +267,9 @@ class Level:
             self.get_collectables()
             self.animated_sprites.update(dt)
         self.all_sprites.custom_draw(self.player)
+        if self.debug:
+            for sprite in self.collision_sprites:
+                sprite.draw_hitbox(self.display_surface, self.player)
         self.ui_manager.display()
         if self.paused:
             dark_surface = pygame.Surface(self.display_surface.get_size())

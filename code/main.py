@@ -32,6 +32,7 @@ class Game:
         mouse_path = path.join("..", "graphics", "cursor", "mouse.png")
         mouse_surface = pygame.image.load(mouse_path).convert_alpha()
         self.mouse_cursor = pygame.cursors.Cursor((0, 0), mouse_surface)
+        self.debug = False
 
     def import_assets(self):
         # land
@@ -120,7 +121,9 @@ class Game:
     def switch_mode(self, grid=None):
         self.transition.active = True
         if grid:
-            self.level = Level(self.ui_manager, grid, self.switch_mode, self.assets)
+            self.level = Level(
+                self.ui_manager, grid, self.switch_mode, self.assets, self.debug
+            )
 
     def run(self):
         while True:
