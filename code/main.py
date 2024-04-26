@@ -33,6 +33,10 @@ class Game:
         mouse_surface = pygame.image.load(mouse_path).convert_alpha()
         self.mouse_cursor = pygame.cursors.Cursor((0, 0), mouse_surface)
         self.debug = False
+        editor_music_path = path.join("..", "audio", "editor.ogg")
+        self.editor_music = pygame.mixer.Sound(editor_music_path)
+        self.editor_music.set_volume(0.4)
+        self.editor_music.play(loops=-1)
 
     def import_assets(self):
         # land
@@ -125,6 +129,7 @@ class Game:
     def switch_mode(self, grid=None):
         self.transition.active = True
         if grid:
+            self.editor_music.stop()
             self.level = Level(
                 self.ui_manager,
                 grid,
@@ -133,6 +138,8 @@ class Game:
                 self.reset_level,
                 self.debug,
             )
+        else:
+            self.editor_music.play(loops=-1)
 
     def reset_level(self, grid):
         self.level = Level(

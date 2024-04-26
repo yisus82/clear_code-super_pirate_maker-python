@@ -1,4 +1,5 @@
 import sys
+from os import path
 from random import choice, randint
 
 import pygame
@@ -43,6 +44,10 @@ class Level:
         self.cloud_timer = pygame.event.custom_type()
         pygame.time.set_timer(self.cloud_timer, 2000)
         self.create_initial_clouds()
+        level_sound_path = path.join("..", "audio", "level.ogg")
+        self.level_sound = pygame.mixer.Sound(level_sound_path)
+        self.level_sound.set_volume(0.4)
+        self.level_sound.play(loops=-1)
 
     def build_level(self):
         # player
@@ -247,11 +252,19 @@ class Level:
 
         # pause the game
         if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
-            self.paused = not self.paused
+            self.toggle_pause()
 
         # create a cloud
         if event.type == self.cloud_timer:
             self.create_cloud()
+
+    def toggle_pause(self):
+        if self.paused:
+            self.paused = False
+            self.level_sound.play(loops=-1)
+        else:
+            self.paused = True
+            self.level_sound.stop()
 
     def confirm_exit(self):
         self.ui_manager.show_confirmation_dialog(
@@ -297,11 +310,12 @@ class Level:
                     [self.all_sprites, self.animated_sprites],
                     500,
                 )
+                sprite.play_sound()
                 coin_value = COLLECTABLE_TYPES["coin"][sprite.coin_type]["value"]
                 print(f"Player collected a {sprite.coin_type} coin worth {coin_value}.")
         if self.collectable_sprites.sprites() == []:
             print("All collectables collected.")
-            self.paused = True
+            self.toggle_pause()
             self.confirm_win()
 
     def check_damage(self):
@@ -311,7 +325,7 @@ class Level:
             sprite.damage_player(self.player)
             if self.player.health <= 0:
                 self.player.kill()
-                self.paused = True
+                self.toggle_pause()
                 self.confirm_game_over()
 
     def create_cloud(self, offscreen=True):

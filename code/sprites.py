@@ -1,3 +1,5 @@
+from os import path
+
 import pygame
 from settings import ANIMATION_SPEED, TILE_SIZE
 from timer import Timer
@@ -99,6 +101,12 @@ class Coin(Animated):
     def __init__(self, coin_type, position, frames, groups):
         super().__init__(position, frames, groups)
         self.coin_type = coin_type
+        coin_sound_path = path.join("..", "audio", "coin.wav")
+        self.coin_sound = pygame.mixer.Sound(coin_sound_path)
+        self.coin_sound.set_volume(0.3)
+
+    def play_sound(self):
+        self.coin_sound.play()
 
 
 class Particle(Animated):

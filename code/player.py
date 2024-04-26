@@ -1,4 +1,5 @@
 from math import sin
+from os import path
 
 import pygame
 from settings import (
@@ -30,6 +31,12 @@ class Player(Animated):
         self.hitbox = self.rect.inflate(*PLAYER_HITBOX_OFFSET)
         self.health = PLAYER_HEALTH
         self.invulnerability_timer = Timer(PLAYER_INVULNERABILITY_DURATION)
+        jump_sound_path = path.join("..", "audio", "jump.wav")
+        self.jump_sound = pygame.mixer.Sound(jump_sound_path)
+        self.jump_sound.set_volume(0.3)
+        hit_sound_path = path.join("..", "audio", "hit.wav")
+        self.hit_sound = pygame.mixer.Sound(hit_sound_path)
+        self.hit_sound.set_volume(0.5)
 
     def input(self):
         keys = pygame.key.get_pressed()
@@ -46,6 +53,7 @@ class Player(Animated):
         if keys[pygame.K_SPACE] and self.on_floor:
             self.direction.y = JUMP_FORCE
             self.on_floor = False
+            self.jump_sound.play()
 
     def update_orientation(self):
         if self.direction.x == 1:
@@ -154,6 +162,7 @@ class Player(Animated):
 
     def take_damage(self, damage):
         if not self.invulnerability_timer.active:
+            self.hit_sound.play()
             self.health -= damage
             print(f"Player took {damage} damage. Health: {self.health}")
             if self.health <= 0:
