@@ -1,25 +1,35 @@
+from math import sin
+
 import pygame
 from settings import (
     COLLISION_OFFSET,
+    DAMAGE_FORCE,
     GRAVITY,
     JUMP_FORCE,
+    PLAYER_HEALTH,
     PLAYER_HITBOX_OFFSET,
+    PLAYER_INVULNERABILITY_DURATION,
     PLAYER_SPEED,
 )
 from sprites import Animated
+from timer import Timer
 
 
 class Player(Animated):
     def __init__(
         self, position, animations, groups, collision_sprites, status="idle_right"
     ):
-        super().__init__(position, animations, groups, status, "bottomleft", "player")
+        super().__init__(
+            position, animations, groups, status, "bottomleft", "player", True
+        )
         self.collision_sprites = collision_sprites
         self.speed = PLAYER_SPEED
         self.on_floor = False
         self.direction = pygame.Vector2()
         self.orientation = self.status.split("_")[1]
         self.hitbox = self.rect.inflate(*PLAYER_HITBOX_OFFSET)
+        self.health = PLAYER_HEALTH
+        self.invulnerability_timer = Timer(PLAYER_INVULNERABILITY_DURATION)
 
     def input(self):
         keys = pygame.key.get_pressed()
@@ -142,6 +152,31 @@ class Player(Animated):
                 self.hitbox.top = sprite.hitbox.bottom
                 self.direction.y = 0
 
+    def take_damage(self, damage):
+        if not self.invulnerability_timer.active:
+            self.health -= damage
+            print(f"Player took {damage} damage. Health: {self.health}")
+            if self.health <= 0:
+                print("Player died.")
+            else:
+                self.invulnerability_timer.activate()
+                self.direction.y = DAMAGE_FORCE
+
+    def flicker_alpha_value(self):
+        if sin(pygame.time.get_ticks()) > 0:
+            return 255
+        else:
+            return 0
+
+    def make_invulnerable(self):
+        self.image.set_alpha(self.flicker_alpha_value())
+
+    def make_vulnerable(self):
+        self.image.set_alpha(255)
+
+    def update_timers(self):
+        self.invulnerability_timer.update()
+
     def update(self, dt):
         self.check_on_floor()
         if not self.on_floor:
@@ -151,3 +186,8 @@ class Player(Animated):
         self.move(dt)
         self.update_status()
         super().update(dt)
+        if self.invulnerability_timer.active:
+            self.invulnerability_timer.update()
+            self.make_invulnerable()
+        else:
+            self.make_vulnerable()

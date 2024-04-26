@@ -13,9 +13,14 @@ class Enemy(Animated):
         animations,
         status="idle",
         pivot="bottomleft",
+        damage=1,
     ):
-        super().__init__(position, animations, groups, status, pivot)
+        super().__init__(position, animations, groups, status, pivot, has_mask=True)
         self.enemy_type = enemy_type
+        self.damage = damage
+
+    def damage_player(self, player):
+        player.take_damage(self.damage)
 
 
 class Spikes(Enemy):
@@ -25,7 +30,7 @@ class Spikes(Enemy):
         groups,
         animations,
     ):
-        super().__init__("spikes", position, groups, animations)
+        super().__init__("spikes", position, groups, animations, damage=5)
 
 
 class Tooth(Enemy):
@@ -37,7 +42,7 @@ class Tooth(Enemy):
         orientation="left",
         collision_sprites=[],
     ):
-        super().__init__("tooth", position, groups, animations)
+        super().__init__("tooth", position, groups, animations, damage=20)
         self.left_frames = animations.copy()
         self.right_frames = self.flip_frames(animations)
         self.orientation = orientation
@@ -155,7 +160,7 @@ class Shell(Enemy):
         player,
         orientation="left",
     ):
-        super().__init__("shell", position, groups, animations)
+        super().__init__("shell", position, groups, animations, damage=0)
         self.left_frames = animations.copy()
         self.right_frames = self.flip_frames(animations)
         self.orientation = orientation
@@ -226,7 +231,7 @@ class Shell(Enemy):
 class Pearl(Enemy):
     def __init__(self, position, surface, groups, direction):
         super().__init__(
-            "pearl", position, groups, {"idle": [surface]}, pivot="topleft"
+            "pearl", position, groups, {"idle": [surface]}, pivot="topleft", damage=10
         )
         self.direction = direction
         self.speed = 150

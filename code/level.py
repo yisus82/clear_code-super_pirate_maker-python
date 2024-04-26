@@ -10,7 +10,7 @@ from sprites import AnimatedObject, Coin, Generic, Mask, Particle, Water
 
 
 class Level:
-    def __init__(self, ui_manager, grid, switch_mode, assets, debug=False):
+    def __init__(self, ui_manager, grid, assets, switch_mode, reset_level, debug=False):
         # main setup
         self.display_surface = pygame.display.get_surface()
         self.ui_manager = ui_manager
@@ -18,6 +18,7 @@ class Level:
         self.switch_mode = switch_mode
         self.paused = False
         self.debug = debug
+        self.reset_level = reset_level
 
         # assets setup
         self.assets = assets
@@ -213,6 +214,8 @@ class Level:
                 sys.exit()
             elif event.ui_object_id == "switch_mode":
                 self.switch_mode()
+            elif event.ui_object_id == "try_again":
+                self.reset_level(self.grid)
         if self.ui_manager.opened_dialog:
             return
 
@@ -246,6 +249,22 @@ class Level:
             "switch_mode",
         )
 
+    def confirm_game_over(self):
+        self.ui_manager.show_confirmation_dialog(
+            "Game over",
+            "You died. Do you want to try again?",
+            "Try again",
+            "try_again",
+        )
+
+    def confirm_win(self):
+        self.ui_manager.show_confirmation_dialog(
+            "You win",
+            "You completed the level. Do you want to play again?",
+            "Play again",
+            "try_again",
+        )
+
     def get_collectables(self):
         collided_collectables = pygame.sprite.spritecollide(
             self.player, self.collectable_sprites, True
@@ -260,19 +279,34 @@ class Level:
                 )
                 coin_value = COLLECTABLE_TYPES["coin"][sprite.coin_type]["value"]
                 print(f"Player collected a {sprite.coin_type} coin worth {coin_value}.")
+        if self.collectable_sprites.sprites() == []:
+            print("All collectables collected.")
+            self.paused = True
+            self.confirm_win()
+
+    def check_damage(self):
+        for sprite in pygame.sprite.spritecollide(
+            self.player, self.damage_sprites, False, pygame.sprite.collide_mask
+        ):
+            sprite.damage_player(self.player)
+            if self.player.health <= 0:
+                self.player.kill()
+                self.paused = True
+                self.confirm_game_over()
 
     def update(self, dt):
         self.display_surface.fill(SKY_COLOR)
         if not self.paused:
             self.get_collectables()
+            self.check_damage()
             self.animated_sprites.update(dt)
         self.all_sprites.custom_draw(self.player)
         if self.debug:
             for sprite in self.collision_sprites:
                 sprite.draw_hitbox(self.display_surface, self.player)
-        self.ui_manager.display()
         if self.paused:
             dark_surface = pygame.Surface(self.display_surface.get_size())
             dark_surface.set_alpha(128)
             dark_surface.fill((0, 0, 0))
             self.display_surface.blit(dark_surface, (0, 0))
+        self.ui_manager.display()

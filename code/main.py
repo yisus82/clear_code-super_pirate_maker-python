@@ -122,8 +122,23 @@ class Game:
         self.transition.active = True
         if grid:
             self.level = Level(
-                self.ui_manager, grid, self.switch_mode, self.assets, self.debug
+                self.ui_manager,
+                grid,
+                self.assets,
+                self.switch_mode,
+                self.reset_level,
+                self.debug,
             )
+
+    def reset_level(self, grid):
+        self.level = Level(
+            self.ui_manager,
+            grid,
+            self.assets,
+            self.switch_mode,
+            self.reset_level,
+            self.debug,
+        )
 
     def run(self):
         while True:

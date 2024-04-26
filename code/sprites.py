@@ -38,6 +38,7 @@ class Animated(Generic):
         status="idle",
         pivot="center",
         sorting_layer="main",
+        has_mask=True,
     ):
         super().__init__(position, frames[status][0], groups, sorting_layer)
         self.status = status
@@ -58,12 +59,18 @@ class Animated(Generic):
         else:
             self.rect = self.image.get_rect(topleft=self.position)
         self.hitbox = self.rect
+        if has_mask:
+            self.mask = pygame.mask.from_surface(self.image)
+        else:
+            self.mask = None
 
     def animate(self, dt):
         self.frame_index += self.animation_speed * dt
         if self.frame_index >= len(self.frames[self.status]):
             self.frame_index = 0
         self.image = self.frames[self.status][int(self.frame_index)]
+        if self.mask is not None:
+            self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect(center=self.hitbox.center)
 
     def update(self, dt):
